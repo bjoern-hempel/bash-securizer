@@ -16,10 +16,10 @@ titleSpace=35
 defaultHeaderErrorText="Check the following headers"
 
 # show some extra informations
-verbose=True
+verbose=true
 
 # initial values
-SHOW_HEADER=False
+SHOW_HEADER=false
 
 # read arguments
 # help:
@@ -28,7 +28,7 @@ while [[ $# > 0 ]]; do
     case "$1" in
         # help:         --show-header             Show all headers next to the test.
         --show-header)
-            SHOW_HEADER=True
+            SHOW_HEADER=true
             ;;
 
         # help:  -h,    --help                    Shows this help.
@@ -149,7 +149,7 @@ function printHeader {
 
 function printSuccess {
     local title="$1"
-    local warning=${2:-False}
+    local warning=${2:-false}
     local textPassed="${3:-Test passed.}"
     local warningText=" (see previous warnings)" && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
@@ -252,7 +252,7 @@ function doCspCheck {
     fi
 
     # some error checks
-    local error=False
+    local error=false
     if $error; then
         printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
         return 1
@@ -269,7 +269,7 @@ function doCspCheck {
     if [ "$warningText" == "" ]; then
         printSuccess "$checkName"
     else
-        printSuccess "$checkName" True
+        printSuccess "$checkName" true
         echo -e "$warningText"
     fi
     return 0
@@ -510,9 +510,9 @@ function doSecurityTest {
     echo "=============================="
     # print state
     if $stateOverall; then
-        printSuccess "State" False "All tests passed."
+        printSuccess "State" false "All tests passed."
     else
-        printError "State" False "see errors below" "At least one test failed."
+        printError "State" false "see errors below" "At least one test failed."
     fi
 }
 

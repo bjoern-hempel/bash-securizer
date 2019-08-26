@@ -18,11 +18,19 @@ defaultHeaderErrorText="Check the following headers"
 # show some extra informations
 verbose=True
 
+# initial values
+SHOW_HEADER=False
+
 # read arguments
 # help:
 # help: Usage: %scriptname% [options...] {install|update|status}
 while [[ $# > 0 ]]; do
     case "$1" in
+        # help:         --show-header             Show all headers next to the test.
+        --show-header)
+            SHOW_HEADER=True
+            ;;
+
         # help:  -h,    --help                    Shows this help.
         # help:
         -h|--help)
@@ -459,13 +467,10 @@ function doSecurityTest {
     local body=$(getBody "$url")
 
     # print header for debugging reasons
-    echo ""
-    echo "HEADER"
-    echo "---"
-    echo "$header"
-    echo "---"
-    echo
-    echo
+    if $SHOW_HEADER; then
+        echo "$header"
+        echo "=============================="
+    fi
 
     # do cookie check
     ( ! doHeaderCookieCheck "$header" ) && stateOverall=false
@@ -502,15 +507,13 @@ function doSecurityTest {
 
     # do CAA DNS check
 
-    echo "---"
+    echo "=============================="
     # print state
     if $stateOverall; then
         printSuccess "State" False "All tests passed."
     else
         printError "State" False "see errors below" "At least one test failed."
     fi
-    echo ""
-    echo ""
 }
 
 # start the test

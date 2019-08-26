@@ -151,7 +151,7 @@ function printSuccess {
     local title="$1"
     local warning=${2:-false}
     local textPassed="${3:-Test passed.}"
-    local warningText=" (see previous warnings)" && $warning || warningText=""
+    local warningText=" (but check the following warnings)" && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
 
     printf '%-'$titleSpace's \e[42m%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
@@ -262,7 +262,7 @@ function doCspCheck {
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | grep -i --color=never "unsafe-inline")
 
     if [ "$headerFilteredNotSecured" != "" ]; then
-        warningText="$warningText"$(printWarning "It is not recommend to use the setting \"unsafe-inline\".")
+        warningText="$warningText"$(printBulletItem "It is not recommend to use the setting \"unsafe-inline\".")
     fi
 
     # print status text
@@ -512,7 +512,7 @@ function doSecurityTest {
     if $stateOverall; then
         printSuccess "State" false "All tests passed."
     else
-        printError "State" false "see errors below" "At least one test failed."
+        printError "State" false "Check the errors before." "At least one test failed."
     fi
 }
 

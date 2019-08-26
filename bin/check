@@ -15,6 +15,9 @@ titleSpace=35
 # set default texts
 defaultHeaderErrorText="Check the following headers"
 
+# show some extra informations
+verbose=True
+
 # read arguments
 # help:
 # help: Usage: %scriptname% [options...] {install|update|status}
@@ -156,6 +159,22 @@ function printError {
     [ "$title" != "" ] && title="$title:"
 
     printf '%-'$titleSpace's \e[41m%s\e[0m (%s)\n' "$title" "$textPassed" "$hint"
+}
+
+function printStandard {
+    local title="$1"
+    local text="${2:-}"
+    [ "$title" != "" ] && title="$title:"
+
+    printf '%-'$titleSpace's %s\n' "$title" "$text"
+}
+
+function printBulletItem {
+    local texts="${1:-}"
+
+    while read -r text; do
+        printf '%-'$titleSpace's - %s\n' "" "$text"
+    done <<< "$texts"
 }
 
 function printErrorIncludingMessage {
@@ -354,6 +373,31 @@ function doFpCheck {
     return 1
 }
 
+function doShCheck {
+    local checkName="Server-Header"
+    local filter="Server"
+    local header="$1"
+    local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
+
+    # no header was found
+    if [ "$headerFiltered" == "" ]; then
+        printSuccess "$checkName"
+        return 0
+    fi
+
+    local headerFilteredNotSecured=""
+
+    if [ "$headerFilteredNotSecured" == "" ]; then
+        printError "$checkName" "\"$filter:\" header was found."
+        $verbose && printBulletItem "$headerFiltered"
+        return 1
+    fi
+
+    printError "$checkName" "\"$filter:\" header was found."
+    $verbose && printBulletItem "$headerFiltered"
+    return 1
+}
+
 function doSecurityTest {
     local stateOverall=true
     local url="$1"
@@ -397,12 +441,11 @@ function doSecurityTest {
     # do Cross-Original-Destinationen check (rel links)
 
     # do Server Header check
+    ( ! doShCheck "$header" ) && stateOverall=false
 
     # do generator meta-tag check
 
     # do CAA DNS check
-
-    # 
 
     echo "---"
     # print state

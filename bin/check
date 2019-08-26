@@ -428,6 +428,29 @@ function doSlCheck {
     return 0
 }
 
+function doMdCheck {
+    local checkName="Metadata"
+    local header="$1"
+    local body="$2"
+
+    # todo: check if xmllink exists
+
+    local metaGenerator=$(\
+        echo "$body" | \
+        xmllint --nowarning --html --pretty 0 --xpath 'string(//meta[@name="generator"]/@content)' - 2>/dev/null | \
+        awk NF \
+    )
+
+    if [ "$metaGenerator" != "" ]; then
+        printError "$checkName" "Found meta generator tag with the following content: \"$metaGenerator\"."
+        return 1
+    fi
+
+    # no meta generator value was found.
+    printSuccess "$checkName"
+    return 0
+}
+
 function doSecurityTest {
     local stateOverall=true
     local url="$1"
@@ -475,6 +498,7 @@ function doSecurityTest {
     ( ! doSlCheck "$header" "$body" ) && stateOverall=false
 
     # do generator meta-tag check
+    ( ! doMdCheck "$header" "$body" ) && stateOverall=false
 
     # do CAA DNS check
 

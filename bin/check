@@ -57,6 +57,10 @@ function getHeader {
     curl -I -L $1 2>&1
 }
 
+function getBody {
+    curl -L $1 2>&1
+}
+
 function hasRedirectFromHeader {
     local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
 
@@ -398,12 +402,38 @@ function doShCheck {
     return 1
 }
 
+function doSlCheck {
+    local checkName="Secure-Links"
+    local header="$1"
+    local body="$2"
+
+    # todo: check if xmllink exists
+
+    local numberLinksUnsecure=$(\
+        echo "$body" | \
+        xmllint --nowarning --html --pretty 0 --xpath '//a[contains(@target, "_blank") and (not(contains(@rel, "noopener")) or not(contains(@rel, "noreferrer")))]' - 2>/dev/null | \
+        grep '<a ' | \
+        wc -l | \
+        xargs \
+    )
+
+    # we do have some insecure links
+    if [ $numberLinksUnsecure -gt 0 ]; then
+        printError "$checkName" "Found $numberLinksUnsecure links with target \"_blank\"."
+        return 1
+    fi
+
+    # all links are safe
+    printSuccess "$checkName"
+    return 0
+}
+
 function doSecurityTest {
     local stateOverall=true
     local url="$1"
 
-
     local header=$(getHeader "$url")
+    local body=$(getBody "$url")
 
     # print header for debugging reasons
     echo ""
@@ -418,30 +448,31 @@ function doSecurityTest {
     ( ! doHeaderCookieCheck "$header" ) && stateOverall=false
 
     # do HTTP Strict Transport Security check
-    ( ! doHstsCheck "$header" ) && stateOverall=false
+    ( ! doHstsCheck "$header" "$body" ) && stateOverall=false
 
     # do Content-Security-Policy check
-    ( ! doCspCheck "$header" ) && stateOverall=false
+    ( ! doCspCheck "$header" "$body" ) && stateOverall=false
 
     # do X-XSS-Protection Header check
-    ( ! doXssCheck "$header" ) && stateOverall=false
+    ( ! doXssCheck "$header" "$body" ) && stateOverall=false
 
     # do X-Content-Type-Options check
-    ( ! doCtoCheck "$header" ) && stateOverall=false
+    ( ! doCtoCheck "$header" "$body" ) && stateOverall=false
 
     # do X-Frame-Options check
-    ( ! doFoCheck "$header" ) && stateOverall=false
+    ( ! doFoCheck "$header" "$body" ) && stateOverall=false
 
     # do Referrer-Policy Header check
-    ( ! doRpCheck "$header" ) && stateOverall=false
+    ( ! doRpCheck "$header" "$body" ) && stateOverall=false
 
     # do Feature-Policy Header check
-    ( ! doFpCheck "$header" ) && stateOverall=false
-
-    # do Cross-Original-Destinationen check (rel links)
+    ( ! doFpCheck "$header" "$body" ) && stateOverall=false
 
     # do Server Header check
-    ( ! doShCheck "$header" ) && stateOverall=false
+    ( ! doShCheck "$header" "$body" ) && stateOverall=false
+
+    # do Cross-Original-Destination check (rel links)
+    ( ! doSlCheck "$header" "$body" ) && stateOverall=false
 
     # do generator meta-tag check
 

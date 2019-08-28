@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# This script tests a web application for security.
+#
+# @author Björn Hempel <bjoern@hempel.li>
+#
+# Todo:
+# - http status check
+# - ssl certificate check
+# - X-Powered-By header check
+
 # initial values
 executionType="check"
 
@@ -162,7 +171,7 @@ function printSuccess {
     local warning=${2:-false}
     local textPassed="${3:-Test passed.}"
 
-    local warningText=" (But check the following warnings.)" && $warning || warningText=""
+    local warningText=" → But check the following warnings." && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
 
     printf '%-'$titleSpace's \e[42m%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
@@ -180,7 +189,7 @@ function printError {
     local hint="${2:-}"
     local textPassed="${3:-Test failed.}"
 
-    local hintText=" ($hint)" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
+    local hintText=" → $hint" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
     [ "$title" != "" ] && title="$title:"
 
     printf '%-'$titleSpace's \e[41m%s\e[0m%s\n' "$title" "$textPassed" "$hintText"
@@ -416,17 +425,20 @@ function doShCheck {
         return 0
     fi
 
-    local headerFilteredNotSecured=""
+    # header was found -> check header
+    local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*Server: //')
 
-    if [ "$headerFilteredNotSecured" == "" ]; then
-        printError "$checkName" "\"$filter\" header was found."
-        $verbose && printBulletItem "$headerFiltered"
+    local contentCheck=true && [[ "$content" =~ ^[a-zA-Z]+$ ]] || contentCheck=false
+
+    if ! $contentCheck; then
+        printError "$checkName" "\"$filter\" header was found and is not secure."
+        $verbose && printBulletItem "Content: $content"
         return 1
     fi
 
-    printError "$checkName" "\"$filter\" header was found."
-    $verbose && printBulletItem "$headerFiltered"
-    return 1
+    printSuccess "$checkName" true
+    $verbose && printBulletItem "If possible, disable the following content: \"$content\""
+    return 0
 }
 
 function doSlCheck {
@@ -469,7 +481,8 @@ function doMdCheck {
     )
 
     if [ "$metaGenerator" != "" ]; then
-        printError "$checkName" "Found meta generator tag with the following content: \"$metaGenerator\"."
+        printError "$checkName" "Found meta generator tag."
+        $verbose && printBulletItem "Content: \"$metaGenerator\""
         return 1
     fi
 

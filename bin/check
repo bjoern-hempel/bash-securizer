@@ -224,6 +224,32 @@ function printMultipleStringWithLineNumber {
     echo "$1" | sed '/^$/d' | awk '{printf "%0'$leadingZeros'd %s\n", NR, $0}'
 }
 
+function doHttpStatusCheck {
+    local statusCode=200
+    local checkName="HTTP status code $statusCode"
+    local filter="HTTP/[0-9]\.[0-9] "
+    local header="$1"
+    local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter")
+
+    if [[ "$headerFiltered" =~ HTTP/1.1[[:space:]]([0-9]*) ]]; then
+        local content=${BASH_REMATCH[1]}
+
+				if [ "$content" == "$statusCode" ]; then
+            printSuccess "$checkName"
+            return 0
+        else
+            printError "$checkName" "Status code $statusCode was not found."
+            $verbose && printBulletItem "Status code: $content"
+            return 1
+        fi
+    fi
+
+    # no header was found
+    printSuccess "$checkName" true
+    $verbose && printBulletItem "No $filter header was found. Usually one is expected."
+    return 0
+}
+
 function doXPoweredCheck {
     local checkName="X-Powered-By"
     local filter="X-Powered-By"
@@ -533,6 +559,13 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
     fi
 
+    # do http status check
+    ((testCount++)) && ( ! doHttpStatusCheck "$header" ) && ((stateOverall++))
+
+    # do https check
+
+    # do ssl check
+
     # do X-Powered-By check
     ((testCount++)) && ( ! doXPoweredCheck "$header" ) && ((stateOverall++))
 
@@ -572,7 +605,6 @@ function doSecurityTest {
     # do CAA DNS check
 
     repeatChar '-' $seperatorCount
-
     ((testCount--))
 
     # print overall state

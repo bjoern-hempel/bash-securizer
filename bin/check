@@ -224,6 +224,26 @@ function printMultipleStringWithLineNumber {
     echo "$1" | sed '/^$/d' | awk '{printf "%0'$leadingZeros'd %s\n", NR, $0}'
 }
 
+function doXPoweredCheck {
+    local checkName="X-Powered-By"
+    local filter="X-Powered-By"
+    local header="$1"
+    local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
+
+    # no header was found
+    if [ "$headerFiltered" == "" ]; then
+        printSuccess "$checkName"
+        return 0
+    fi
+
+    # header was found -> check header
+    local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
+
+    printError "$checkName" "\"$filter\" header was found and is not secure."
+    $verbose && printBulletItem "Content: $content"
+    return 1
+}
+
 function doHeaderCookieCheck {
     local checkName="Cookie Security"
     local filter="Cookie"
@@ -494,7 +514,7 @@ function doMdCheck {
 }
 
 function doSecurityTest {
-    local stateOverall=true
+    local stateOverall=0
     local url="$1"
 
     local header=$(getHeader "$url")
@@ -512,38 +532,41 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
     fi
 
+    # do X-Powered-By check
+    ( ! doXPoweredCheck "$header" ) && ((stateOverall++))
+
     # do cookie check
-    ( ! doHeaderCookieCheck "$header" ) && stateOverall=false
+    ( ! doHeaderCookieCheck "$header" ) && ((stateOverall++))
 
     # do HTTP Strict Transport Security check
-    ( ! doHstsCheck "$header" "$body" ) && stateOverall=false
+    ( ! doHstsCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Content-Security-Policy check
-    ( ! doCspCheck "$header" "$body" ) && stateOverall=false
+    ( ! doCspCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-XSS-Protection Header check
-    ( ! doXssCheck "$header" "$body" ) && stateOverall=false
+    ( ! doXssCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-Content-Type-Options check
-    ( ! doCtoCheck "$header" "$body" ) && stateOverall=false
+    ( ! doCtoCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-Frame-Options check
-    ( ! doFoCheck "$header" "$body" ) && stateOverall=false
+    ( ! doFoCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Referrer-Policy Header check
-    ( ! doRpCheck "$header" "$body" ) && stateOverall=false
+    ( ! doRpCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Feature-Policy Header check
-    ( ! doFpCheck "$header" "$body" ) && stateOverall=false
+    ( ! doFpCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Server Header check
-    ( ! doShCheck "$header" "$body" ) && stateOverall=false
+    ( ! doShCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Cross-Original-Destination check (rel links)
-    ( ! doSlCheck "$header" "$body" ) && stateOverall=false
+    ( ! doSlCheck "$header" "$body" ) && ((stateOverall++))
 
     # do generator meta-tag check
-    ( ! doMdCheck "$header" "$body" ) && stateOverall=false
+    ( ! doMdCheck "$header" "$body" ) && ((stateOverall++))
 
     # do CAA DNS check
 
@@ -551,10 +574,10 @@ function doSecurityTest {
 
 
     # print overall state
-    if $stateOverall; then
+    if [ $stateOverall -eq 0 ]; then
         printSuccess "State" false "All tests passed."
     else
-        printError "State" false "Check the errors before. At least one test failed."
+        printError "State" false "Check the errors before. $stateOverall test(s) failed."
     fi
 
     if $SHOW_HEADER; then

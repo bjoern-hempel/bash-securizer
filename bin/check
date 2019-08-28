@@ -161,7 +161,8 @@ function printSuccess {
     local title="$1"
     local warning=${2:-false}
     local textPassed="${3:-Test passed.}"
-    local warningText=" (but check the following warnings)" && $warning || warningText=""
+
+    local warningText=" (But check the following warnings.)" && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
 
     printf '%-'$titleSpace's \e[42m%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
@@ -176,11 +177,13 @@ function printWarning {
 
 function printError {
     local title="$1"
-    local hint="${2:----}"
+    local hint="${2:-}"
     local textPassed="${3:-Test failed.}"
+
+    local hintText=" ($hint)" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
     [ "$title" != "" ] && title="$title:"
 
-    printf '%-'$titleSpace's \e[41m%s\e[0m (%s)\n' "$title" "$textPassed" "$hint"
+    printf '%-'$titleSpace's \e[41m%s\e[0m%s\n' "$title" "$textPassed" "$hintText"
 }
 
 function printStandard {
@@ -387,7 +390,7 @@ function doFpCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "$checkName" "No \"$filter\" header was found."
         return 1
     fi
 
@@ -416,12 +419,12 @@ function doShCheck {
     local headerFilteredNotSecured=""
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printError "$checkName" "\"$filter:\" header was found."
+        printError "$checkName" "\"$filter\" header was found."
         $verbose && printBulletItem "$headerFiltered"
         return 1
     fi
 
-    printError "$checkName" "\"$filter:\" header was found."
+    printError "$checkName" "\"$filter\" header was found."
     $verbose && printBulletItem "$headerFiltered"
     return 1
 }
@@ -443,7 +446,7 @@ function doSlCheck {
 
     # we do have some insecure links
     if [ $numberLinksUnsecure -gt 0 ]; then
-        printError "$checkName" "Found $numberLinksUnsecure links with target \"_blank\" and without rel attribute (noopener, noreferrer)."
+        printError "$checkName" "Found $numberLinksUnsecure links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
         return 1
     fi
 
@@ -530,14 +533,19 @@ function doSecurityTest {
     # do CAA DNS check
 
     repeatChar '-' $seperatorCount
-    # print state
+
+
+    # print overall state
     if $stateOverall; then
         printSuccess "State" false "All tests passed."
     else
-        printError "State" false "Check the errors before." "At least one test failed."
+        printError "State" false "Check the errors before. At least one test failed."
     fi
-    repeatChar '=' $seperatorCount
-    echo
+
+    if $SHOW_HEADER; then
+        repeatChar '=' $seperatorCount
+        echo
+    fi
 }
 
 # start the test

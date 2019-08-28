@@ -102,9 +102,18 @@ function hasRedirectFromHeader {
 
 function getLastRedirectFromHeader {
     local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
+    local url="$2"
 
     # no Location header was found
-    [ "$targetCurrent" == "" ] && return
+    if [ "$targetCurrent" == "" ]; then
+        targetCurrent="$url"
+
+        if [[ "$targetCurrent" =~ ^http(s)*:// ]]; then
+            echo "$targetCurrent" && return
+        fi
+
+        echo "http://$targetCurrent" && return
+    fi
 
     # remove some special chars
     targetCurrent=$(echo -e -n "$targetCurrent" | xargs | tr -dc ':/.\-[:alnum:]')
@@ -566,10 +575,8 @@ function doSecurityTest {
 
     local header=$(getHeader "$url")
     local lastHeader=$(getLastHeaderFromHeader "$header")
-    local lastRedirect=$(getLastRedirectFromHeader "$header")
+    local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
     local body=$(getBody "$url")
-
-    [ "$lastRedirect" == "" ] && lastRedirect="$url"
 
     echo
     echo "last redirect: $lastRedirect"

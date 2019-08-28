@@ -515,6 +515,7 @@ function doMdCheck {
 
 function doSecurityTest {
     local stateOverall=0
+    local testCount=1
     local url="$1"
 
     local header=$(getHeader "$url")
@@ -533,51 +534,52 @@ function doSecurityTest {
     fi
 
     # do X-Powered-By check
-    ( ! doXPoweredCheck "$header" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doXPoweredCheck "$header" ) && ((stateOverall++))
 
     # do cookie check
-    ( ! doHeaderCookieCheck "$header" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doHeaderCookieCheck "$header" ) && ((stateOverall++))
 
     # do HTTP Strict Transport Security check
-    ( ! doHstsCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doHstsCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Content-Security-Policy check
-    ( ! doCspCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doCspCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-XSS-Protection Header check
-    ( ! doXssCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doXssCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-Content-Type-Options check
-    ( ! doCtoCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doCtoCheck "$header" "$body" ) && ((stateOverall++))
 
     # do X-Frame-Options check
-    ( ! doFoCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doFoCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Referrer-Policy Header check
-    ( ! doRpCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doRpCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Feature-Policy Header check
-    ( ! doFpCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doFpCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Server Header check
-    ( ! doShCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doShCheck "$header" "$body" ) && ((stateOverall++))
 
     # do Cross-Original-Destination check (rel links)
-    ( ! doSlCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doSlCheck "$header" "$body" ) && ((stateOverall++))
 
     # do generator meta-tag check
-    ( ! doMdCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doMdCheck "$header" "$body" ) && ((stateOverall++))
 
     # do CAA DNS check
 
     repeatChar '-' $seperatorCount
 
+    ((testCount--))
 
     # print overall state
     if [ $stateOverall -eq 0 ]; then
         printSuccess "State" false "All tests passed."
     else
-        printError "State" false "Check the errors before. $stateOverall test(s) failed."
+        printError "State" false "Check the errors before. $stateOverall/$testCount tests failed."
     fi
 
     if $SHOW_HEADER; then

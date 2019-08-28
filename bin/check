@@ -12,6 +12,9 @@ PARAMETERS=()
 # sets the title space
 titleSpace=35
 
+# sets the seperator count
+seperatorCount=80
+
 # set default texts
 defaultHeaderErrorText="Check the following headers"
 
@@ -67,6 +70,13 @@ function getHeader {
 
 function getBody {
     curl -L $1 2>&1
+}
+
+function repeatChar {
+    local input="$1"
+    local count="$2"
+
+    printf "%${count}s\n" | sed -e "s/ /$input/g"
 }
 
 function hasRedirectFromHeader {
@@ -136,7 +146,7 @@ function checkLink {
 
 function getHeader {
     local url="$1"
-    local header=$(curl -sIL "$url" | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1')
+    local header=$(curl -sIL "$url" 2>&1 | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
     echo "$header"
 }
 
@@ -192,6 +202,12 @@ function printBulletItem {
 function printErrorIncludingMessage {
     printError "$1" "$2"
     echo "$3" | sed 's/^/> /'
+}
+
+function printMultipleStringWithLineNumber {
+    local leadingZeros=$(printf "%d" $(echo "$1" | wc -l | xargs) | wc -c | xargs)
+
+    echo "$1" | sed '/^$/d' | awk '{printf "%0'$leadingZeros'd %s\n", NR, $0}'
 }
 
 function doHeaderCookieCheck {
@@ -468,8 +484,14 @@ function doSecurityTest {
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
-        echo "$header"
-        echo "=============================="
+        echo
+        echo 'HEADER:'
+        repeatChar '=' $seperatorCount
+        printMultipleStringWithLineNumber "$header"
+        repeatChar '=' $seperatorCount
+        echo
+        echo 'TESTS:'
+        repeatChar '=' $seperatorCount
     fi
 
     # do cookie check
@@ -507,13 +529,15 @@ function doSecurityTest {
 
     # do CAA DNS check
 
-    echo "=============================="
+    repeatChar '-' $seperatorCount
     # print state
     if $stateOverall; then
         printSuccess "State" false "All tests passed."
     else
         printError "State" false "Check the errors before." "At least one test failed."
     fi
+    repeatChar '=' $seperatorCount
+    echo
 }
 
 # start the test

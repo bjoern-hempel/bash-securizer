@@ -26,6 +26,9 @@ seperatorCount=80
 # set default texts
 defaultHeaderErrorText="Check the following headers"
 
+# set user agent
+userAgent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36'
+
 # show some extra informations
 verbose=true
 
@@ -73,11 +76,11 @@ done
 declare -A domains
 
 function getHeader {
-    curl -I -L $1 2>&1
+    curl -sIL -A "$userAgent" "$1" 2>&1
 }
 
 function getBody {
-    curl -L $1 2>&1
+    curl -L -A "$userAgent" $1 2>&1
 }
 
 function repeatChar {
@@ -152,9 +155,14 @@ function checkLink {
     return $state
 }
 
-function getHeader {
+function getLastHeader {
     local url="$1"
     local header=$(curl -sIL "$url" 2>&1 | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
+    echo "$header"
+}
+
+function getLastHeaderFromHeader {
+    local header=$(echo "$1" | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
     echo "$header"
 }
 
@@ -247,6 +255,19 @@ function doHttpStatusCheck {
     printSuccess "$checkName" true
     $verbose && printBulletItem "No $filter header was found. Usually one is expected."
     return 0
+}
+
+function doHttpsCheck {
+    local checkName="HTTPS check"
+    local lastRedirect="$1"
+
+    if [[ "$lastRedirect" =~ ^https ]]; then
+        printSuccess "$checkName"
+        return 0
+    fi
+
+    printError "$checkName" "The page is not securely transmitted."
+    return 1
 }
 
 function doXPoweredCheck {
@@ -544,14 +565,21 @@ function doSecurityTest {
     local url="$1"
 
     local header=$(getHeader "$url")
+    local lastHeader=$(getLastHeaderFromHeader "$header")
+    local lastRedirect=$(getLastRedirectFromHeader "$header")
     local body=$(getBody "$url")
+
+    [ "$lastRedirect" == "" ] && lastRedirect="$url"
+
+    echo
+    echo "last redirect: $lastRedirect"
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
         echo
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
-        printMultipleStringWithLineNumber "$header"
+        printMultipleStringWithLineNumber "$lastHeader"
         repeatChar '=' $seperatorCount
         echo
         echo 'TESTS:'
@@ -559,47 +587,48 @@ function doSecurityTest {
     fi
 
     # do http status check
-    ((testCount++)) && ( ! doHttpStatusCheck "$header" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doHttpStatusCheck "$lastHeader" ) && ((stateOverall++))
 
     # do https check
+    ((testCount++)) && ( ! doHttpsCheck "$lastRedirect" ) && ((stateOverall++))
 
     # do ssl check
 
     # do X-Powered-By check
-    ((testCount++)) && ( ! doXPoweredCheck "$header" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doXPoweredCheck "$lastHeader" ) && ((stateOverall++))
 
     # do cookie check
-    ((testCount++)) && ( ! doHeaderCookieCheck "$header" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doHeaderCookieCheck "$lastHeader" ) && ((stateOverall++))
 
     # do HTTP Strict Transport Security check
-    ((testCount++)) && ( ! doHstsCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doHstsCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do Content-Security-Policy check
-    ((testCount++)) && ( ! doCspCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doCspCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do X-XSS-Protection Header check
-    ((testCount++)) && ( ! doXssCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doXssCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do X-Content-Type-Options check
-    ((testCount++)) && ( ! doCtoCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doCtoCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do X-Frame-Options check
-    ((testCount++)) && ( ! doFoCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doFoCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do Referrer-Policy Header check
-    ((testCount++)) && ( ! doRpCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doRpCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do Feature-Policy Header check
-    ((testCount++)) && ( ! doFpCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doFpCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do Server Header check
-    ((testCount++)) && ( ! doShCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doShCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do Cross-Original-Destination check (rel links)
-    ((testCount++)) && ( ! doSlCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doSlCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do generator meta-tag check
-    ((testCount++)) && ( ! doMdCheck "$header" "$body" ) && ((stateOverall++))
+    ((testCount++)) && ( ! doMdCheck "$lastHeader" "$body" ) && ((stateOverall++))
 
     # do CAA DNS check
 

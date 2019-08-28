@@ -174,7 +174,9 @@ function printSuccess {
     local warningText=" → But check the following warnings." && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
 
-    printf '%-'$titleSpace's \e[42m%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
+    local format='\e[43m' && $warning || format='\e[42m'
+
+    printf '%-'$titleSpace's '$format'%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
 }
 
 function printWarning {

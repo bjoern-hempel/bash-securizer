@@ -5,9 +5,8 @@
 # @author Björn Hempel <bjoern@hempel.li>
 #
 # Todo:
-# - http status check
 # - ssl certificate check
-# - X-Powered-By header check
+# - https check
 
 # initial values
 executionType="check"

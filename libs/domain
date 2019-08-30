@@ -35,7 +35,7 @@ function getProviderFromIP {
 
     local orgName=$(\
         echo "$whoisResult" | \
-        grep --color=never "org-name:" | \
+        grep --color=never "org-name:\|OrgName:" | \
         cut -d":" -f2 | \
         sed 's/^[ ]*//g'
     )

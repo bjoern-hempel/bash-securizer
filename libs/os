@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+function getOS {
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        echo 'linux'
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo 'mac'
+    elif [[ "$OSTYPE" == "cygwin" ]]; then
+        echo 'cygwin'
+    elif [[ "$OSTYPE" == "msys" ]]; then
+        echo 'msys'
+    elif [[ "$OSTYPE" == "win32" ]]; then
+        echo 'windows'
+    elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        echo 'freebsd'
+    else
+        echo 'unknown'
+    fi
+}

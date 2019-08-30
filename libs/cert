@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+function validDaysOfCert {
+    local domain="$1"
+    local os="$2"
+
+    if [ "$os" == "mac" ]; then
+        echo | \
+        openssl s_client -servername "$domain" -connect $domain:443 2>/dev/null | \
+        openssl x509 -noout -dates | \
+        grep --color=never 'notAfter=' | \
+        sed "s/.*notAfter=*//" | \
+        { read gmt; LANG=en_GB date -jf "%b %d %H:%M:%S %Y GMT" "$gmt" +%s; } | \
+        { read ts; printf "(%d-%d)/86400\n" "$ts" $(date +%s); } | \
+        bc
+    else
+        echo | \
+        openssl s_client -servername "$domain" -connect $domain:443 2>/dev/null | \
+        openssl x509 -noout -dates | \
+        grep --color=never 'notAfter=' | \
+        sed "s/.*notAfter=*//" | \
+        { read gmt; LANG=en_GB date -d "$gmt" +%s; } | \
+        { read ts; printf "(%d-%d)/86400\n" "$ts" $(date +%s); } | \
+        bc
+    fi
+}
+

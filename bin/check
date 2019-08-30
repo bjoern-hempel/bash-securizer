@@ -8,11 +8,16 @@
 # - ssl certificate check
 # - https check
 
-# initial values
-executionType="check"
 
 # script path
-scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+scriptPath="$(dirname "$(readlink "$0")")"
+
+# include os library
+source "$scriptPath/../libs/os"
+source "$scriptPath/../libs/cert"
+
+# initial values
+executionType="check"
 
 # declare parameter list array
 PARAMETERS=()
@@ -31,6 +36,12 @@ userAgent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (K
 
 # show some extra informations
 verbose=true
+
+# ssl error days
+sslErrorDays=7
+
+# ssl warning days (must be greater than sslErrorDays)
+sslWarningDays=14
 
 # initial values
 SHOW_HEADER=false
@@ -175,6 +186,10 @@ function getLastHeaderFromHeader {
     echo "$header"
 }
 
+function printLine {
+    printf '%-'$titleSpace's %s\n' "$1:" "$2"
+}
+
 function printHeader {
     echo ""
     echo "---"
@@ -279,6 +294,35 @@ function doHttpsCheck {
     return 1
 }
 
+
+function doSslCheck {
+    local checkName="SSL check"
+    local lastRedirect="$1"
+    local os="$2"
+    local domain=$(echo "$lastRedirect" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+
+    if [[ "$lastRedirect" =~ ^https ]]; then
+        validDays=$(validDaysOfCert "$domain" "$os")
+
+        if [ "$validDays" -lt $sslErrorDays ]; then
+            printError "$checkName"
+            $verbose && printBulletItem "only $validDays days left"
+            return 1
+        elif [ "$validDays" -lt $sslWarningDays ]; then
+            printSuccess "$checkName" true
+            $verbose && printBulletItem "only $validDays days left"
+            return 0
+        else
+            printSuccess "$checkName"
+            $verbose && printBulletItem "$validDays days left"
+            return 0
+        fi
+    fi
+
+    printError "$checkName" "The page is not securely transmitted."
+    return 1
+}
+
 function doXPoweredCheck {
     local checkName="X-Powered-By"
     local filter="X-Powered-By"
@@ -287,7 +331,9 @@ function doXPoweredCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printSuccess "$checkName"
+        local validDays=$(validDaysOfCert "www.ressourcenmangel.de" "mac")
+
+        printSuccess "$checkName" 
         return 0
     fi
 
@@ -577,12 +623,22 @@ function doSecurityTest {
     local lastHeader=$(getLastHeaderFromHeader "$header")
     local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
     local body=$(getBody "$url")
-
-    echo
-    echo "last redirect: $lastRedirect"
+    local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
+        echo
+        echo 'INFORMATION:'
+        repeatChar '=' $seperatorCount
+        printLine "last redirect" "$lastRedirect"
+        printLine "operating system" "$(getOS)"
+        if $secure; then
+            printLine "secure connection" "yes"
+            printLine "valid days ssl certificate" $(validDaysOfCert "www.ressourcenmangel.de" "mac")
+        else
+            printLine "secure connection" "no"
+        fi
+        repeatChar '=' $seperatorCount
         echo
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
@@ -600,6 +656,7 @@ function doSecurityTest {
     ((testCount++)) && ( ! doHttpsCheck "$lastRedirect" ) && ((stateOverall++))
 
     # do ssl check
+    ((testCount++)) && ( ! doSslCheck "$lastRedirect" "$(getOS)" ) && ((stateOverall++))
 
     # do X-Powered-By check
     ((testCount++)) && ( ! doXPoweredCheck "$lastHeader" ) && ((stateOverall++))

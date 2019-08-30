@@ -52,6 +52,6 @@ function getProviderFromIP {
 
     [ "$provider" == "" ] && provider="Unknown"
 
-    echo "$provider" | sed 's/\n$//g'
+    echo "$provider" | sed 's/\n$//g' | awk '!a[$0]++'
 }
 

@@ -5,3 +5,8 @@ function getDomainFromUrl {
     echo "$url" | sed -e 's|^[^/]*//||' -e 's|/.*$||'
 }
 
+function getIpFromDomain {
+    local domain="$1"
+    dig A +short "$domain"
+}
+

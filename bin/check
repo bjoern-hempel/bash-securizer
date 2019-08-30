@@ -7,6 +7,10 @@
 # Todo:
 # - ssl certificate check
 # - https check
+# - informations
+#   - ip
+#   - provider
+#   - dns server
 
 
 # script path
@@ -622,6 +626,7 @@ function doSecurityTest {
     local lastHeader=$(getLastHeaderFromHeader "$header")
     local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
     local domain=$(getDomainFromUrl "$lastRedirect")
+    local ip=$(getIpFromDomain "$domain")
     local body=$(getBody "$url")
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
     local os=$(getOS)
@@ -635,6 +640,7 @@ function doSecurityTest {
         printLine "given address" "$url"
         printLine "last redirect" "$lastRedirect"
         printLine "domain" "$domain"
+        printLine "ip address" "$ip"
         printLine "operating system" "$os"
         if $secure; then
             printLine "secure connection" "yes"

@@ -93,7 +93,7 @@ done
 declare -A domains
 
 function getHeader {
-    curl -sIL -A "$userAgent" "$1" 2>&1
+    curl -IL -A "$userAgent" "$1" 2>&1
 }
 
 function getBody {
@@ -614,14 +614,25 @@ function doSecurityTest {
     local stateOverall=0
     local testCount=1
     local url="$1"
+    local hintUrl=""
+    local usedUrl="$url"
+    (! [[ "$usedUrl" =~ ^https? ]]) && usedUrl="http://$usedUrl"
+    local header=$(getHeader "$usedUrl")
 
-    local header=$(getHeader "$url")
+    # if we do have a ssl error try to use http
+    local sslError=$(echo "$header" | grep --color=never "SSL: no alternative certificate subject name")
+    if [ "$sslError" != "" ] && [[ "$usedUrl" =~ ^https ]]; then
+        usedUrl=$(echo "$usedUrl" | sed 's/^https/http/')
+        header=$(getHeader "$usedUrl")
+        hintUrl=" (SSL error)"
+    fi
+
     local lastHeader=$(getLastHeaderFromHeader "$header")
-    local lastRedirect=$(getLastRedirectFromUrl "$url")
+    local lastRedirect=$(getLastRedirectFromUrl "$usedUrl")
     local fullDomain=$(getFullDomainFromUrl "$lastRedirect")
     local domain=$(getDomainFromFullDomain "$fullDomain")
     local ip=$(getIpFromDomain "$fullDomain")
-    local body=$(getBody "$url")
+    local body=$(getBody "$usedUrl")
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
     local os=$(getOS)
     local nameserver=$(getNameserver "$domain")
@@ -634,7 +645,8 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         echo 'INFORMATIONS:'
         repeatChar '=' $seperatorCount
-        printLine "given address" "$url"
+        printLine "given address" "$url$hintUrl"
+        printLine "used address" "$usedUrl"
         printLine "last redirect" "$lastRedirect"
         if $secure; then
             printLine "secure connection" "yes"

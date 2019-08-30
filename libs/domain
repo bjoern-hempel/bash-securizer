@@ -47,11 +47,11 @@ function getProviderFromIP {
         sed 's/^[ ]*//g'
     )
 
-    [ "orgName" != "" ]; provider="$provider$orgName"
-    [ "descr" != "" ]; provider="$provider$descr"
+    [ "orgName" != "" ]; provider=$(echo -en "$provider\n$orgName")
+    [ "descr" != "" ]; provider=$(echo -en "$provider\n$descr")
 
     [ "$provider" == "" ] && provider="Unknown"
 
-    echo "$provider" | sed 's/\n$//g' | awk '!a[$0]++'
+    echo "$provider" | awk '!a[$0]++' | awk NF
 }
 

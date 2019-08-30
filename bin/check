@@ -304,7 +304,7 @@ function doSslCheck {
     local checkName="SSL check"
     local lastRedirect="$1"
     local os="$2"
-    local domain=$(getDomainFromUrl "$lastRedirect")
+    local domain=$(getFullDomainFromUrl "$lastRedirect")
 
     if [[ "$lastRedirect" =~ ^https ]]; then
         validDays=$(validDaysOfCert "$domain" "$os")
@@ -625,8 +625,9 @@ function doSecurityTest {
     local header=$(getHeader "$url")
     local lastHeader=$(getLastHeaderFromHeader "$header")
     local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
-    local domain=$(getDomainFromUrl "$lastRedirect")
-    local ip=$(getIpFromDomain "$domain")
+    local fullDomain=$(getFullDomainFromUrl "$lastRedirect")
+    local domain=$(getDomainFromFullDomain "$fullDomain")
+    local ip=$(getIpFromDomain "$fullDomain")
     local body=$(getBody "$url")
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
     local os=$(getOS)
@@ -639,12 +640,13 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         printLine "given address" "$url"
         printLine "last redirect" "$lastRedirect"
+        printLine "full domain" "$fullDomain"
         printLine "domain" "$domain"
         printLine "ip address" "$ip"
         printLine "operating system" "$os"
         if $secure; then
             printLine "secure connection" "yes"
-            printLine "valid days ssl certificate" $(validDaysOfCert "$domain" "$os")
+            printLine "valid days ssl certificate" $(validDaysOfCert "$fullDomain" "$os")
         else
             printLine "secure connection" "no"
         fi

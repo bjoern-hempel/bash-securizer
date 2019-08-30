@@ -642,13 +642,13 @@ function doSecurityTest {
             printLine "secure connection" "no"
         fi
         repeatChar '=' $seperatorCount
-        echo
+        echo && echo
         repeatChar '=' $seperatorCount
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
         printMultipleStringWithLineNumber "$lastHeader"
         repeatChar '=' $seperatorCount
-        echo
+        echo && echo
         repeatChar '=' $seperatorCount
         echo 'TESTS:'
         repeatChar '=' $seperatorCount

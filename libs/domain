@@ -12,7 +12,7 @@ function getDomainFromFullDomain {
 
 function getIpFromDomain {
     local domain="$1"
-    dig A +short "$domain"
+    dig A +short "$domain" | tail -1
 }
 
 function getNameserver {

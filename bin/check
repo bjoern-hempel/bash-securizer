@@ -631,6 +631,8 @@ function doSecurityTest {
     local body=$(getBody "$url")
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
     local os=$(getOS)
+    local nameserver=$(getNameserver "$domain")
+    local provider=$(getProviderFromIP "$ip")
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -640,16 +642,22 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         printLine "given address" "$url"
         printLine "last redirect" "$lastRedirect"
-        printLine "full domain" "$fullDomain"
-        printLine "domain" "$domain"
-        printLine "ip address" "$ip"
-        printLine "operating system" "$os"
         if $secure; then
             printLine "secure connection" "yes"
             printLine "valid days ssl certificate" $(validDaysOfCert "$fullDomain" "$os")
         else
-            printLine "secure connection" "no"
+            printLine "secure connection" "no"                                                                                                                                           
         fi
+        printLine "full domain" "$fullDomain"
+        printLine "domain" "$domain"
+        printLine "ip address" "$ip"
+        local counter=0
+        while read -r ns; do
+            ((counter++))
+            printLine "nameserver $counter" "$ns"
+        done <<< "$nameserver"
+        printLine "provider" "$provider"
+        printLine "operating system" "$os"
         repeatChar '=' $seperatorCount
         echo && echo
         repeatChar '=' $seperatorCount

@@ -15,3 +15,13 @@ function getIpFromDomain {
     dig A +short "$domain"
 }
 
+function getNameserver {
+    local domain=$(getDomainFromFullDomain "$1")
+    whois "$domain" | grep "Nserver" | cut -d" " -f2
+}
+
+function getProviderFromIP {
+    local ip="$1"
+    whois "$ip" | grep --color=never "descr:" | head -1 | cut -d":" -f2 | xargs
+}
+

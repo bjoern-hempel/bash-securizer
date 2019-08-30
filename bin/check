@@ -632,6 +632,7 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         echo 'INFORMATION:'
         repeatChar '=' $seperatorCount
+        printLine "given address" "$url"
         printLine "last redirect" "$lastRedirect"
         printLine "domain" "$domain"
         printLine "operating system" "$os"

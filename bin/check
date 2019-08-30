@@ -7,6 +7,8 @@
 # Todo:
 # - ssl certificate check
 # - https check
+# - X-Generator check (potsdam.de)
+# - Secure-Links count check
 # - informations
 #   - ip
 #   - provider
@@ -292,6 +294,26 @@ function doSslCheck {
 function doXPoweredCheck {
     local checkName="X-Powered-By"
     local filter="X-Powered-By"
+    local header="$1"
+    local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
+
+    # no header was found
+    if [ "$headerFiltered" == "" ]; then
+        printSuccess "$checkName" 
+        return 0
+    fi
+
+    # header was found -> check header
+    local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
+
+    printError "$checkName" "\"$filter\" header was found and is not secure."
+    $verbose && printBulletItem "Content: $content"
+    return 1
+}
+
+function doXGeneratorCheck {
+    local checkName="X-Generator"
+    local filter="X-Generator"
     local header="$1"
     local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
 
@@ -654,6 +676,9 @@ function doSecurityTest {
 
     # do X-Powered-By check
     ((testCount++)) && ( ! doXPoweredCheck "$lastHeader" ) && ((stateOverall++))
+
+    # do X-Generator check
+    ((testCount++)) && ( ! doXGeneratorCheck "$lastHeader" ) && ((stateOverall++))
 
     # do cookie check
     ((testCount++)) && ( ! doHeaderCookieCheck "$lastHeader" ) && ((stateOverall++))

@@ -17,7 +17,15 @@ function getIpFromDomain {
 
 function getNameserver {
     local domain=$(getDomainFromFullDomain "$1")
-    whois "$domain" | grep "Nserver" | cut -d" " -f2
+    local nameserver=$(host -t NS "$domain" | rev | cut -d" " -f1 | rev | sed 's/\.$//' | sort -u)
+
+    if [ "$nameserver" != "" ]; then
+        echo "$nameserver"
+        return 0
+    fi
+
+    echo "Unknown"
+    return 1
 }
 
 function getProviderFromIP {

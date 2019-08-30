@@ -7,7 +7,7 @@ function getFullDomainFromUrl {
 
 function getDomainFromFullDomain {
     local domain="$1"
-    echo "$url" | rev | cut -d"." -f1,2 | rev
+    echo "$domain" | rev | cut -d"." -f1,2 | rev
 }
 
 function getIpFromDomain {

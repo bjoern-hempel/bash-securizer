@@ -154,7 +154,10 @@ function getLastHeaderFromHeader {
 }
 
 function printLine {
-    printf '%-'$titleSpace's %s\n' "$1:" "$2"
+    local caption="$1"
+    local value="$2"
+    [ "$caption" != "" ] && caption="$caption:"
+    printf '%-'$titleSpace's %s\n' "$caption" "$value"
 }
 
 function printHeader {
@@ -663,11 +666,11 @@ function doSecurityTest {
         printLine "ip address" "$ip"
         counter=0; while read -r ns; do
             ((counter++))
-            printLine "nameserver $counter" "$ns"
+            [ $counter -eq 1 ] && printLine "nameserver" "$ns" || printLine "" "$ns"
         done <<< "$nameserver"
         counter=0; while read -r p; do
             ((counter++))
-            printLine "provider $counter" "$p"
+            [ $counter -eq 1 ] && printLine "provider" "$p" || printLine "" "$p"
         done <<< "$provider"
         printLine "operating system" "$os"
         repeatChar '=' $seperatorCount

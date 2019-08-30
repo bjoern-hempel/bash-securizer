@@ -15,6 +15,7 @@ scriptPath="$(dirname "$(readlink "$0")")"
 # include os library
 source "$scriptPath/../libs/os"
 source "$scriptPath/../libs/cert"
+source "$scriptPath/../libs/domain"
 
 # initial values
 executionType="check"
@@ -299,7 +300,7 @@ function doSslCheck {
     local checkName="SSL check"
     local lastRedirect="$1"
     local os="$2"
-    local domain=$(echo "$lastRedirect" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+    local domain=$(getDomainFromUrl "$lastRedirect")
 
     if [[ "$lastRedirect" =~ ^https ]]; then
         validDays=$(validDaysOfCert "$domain" "$os")
@@ -331,8 +332,6 @@ function doXPoweredCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        local validDays=$(validDaysOfCert "www.ressourcenmangel.de" "mac")
-
         printSuccess "$checkName" 
         return 0
     fi
@@ -622,8 +621,10 @@ function doSecurityTest {
     local header=$(getHeader "$url")
     local lastHeader=$(getLastHeaderFromHeader "$header")
     local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
+    local domain=$(getDomainFromUrl "$lastRedirect")
     local body=$(getBody "$url")
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
+    local os=$(getOS)
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -631,10 +632,11 @@ function doSecurityTest {
         echo 'INFORMATION:'
         repeatChar '=' $seperatorCount
         printLine "last redirect" "$lastRedirect"
-        printLine "operating system" "$(getOS)"
+        printLine "domain" "$domain"
+        printLine "operating system" "$os"
         if $secure; then
             printLine "secure connection" "yes"
-            printLine "valid days ssl certificate" $(validDaysOfCert "www.ressourcenmangel.de" "mac")
+            printLine "valid days ssl certificate" $(validDaysOfCert "$domain" "$os")
         else
             printLine "secure connection" "no"
         fi

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+function getDomainFromUrl {
+    local url="$1"
+    echo "$url" | sed -e 's|^[^/]*//||' -e 's|/.*$||'
+}
+

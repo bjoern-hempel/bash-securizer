@@ -629,6 +629,7 @@ function doSecurityTest {
     # print header for debugging reasons
     if $SHOW_HEADER; then
         echo
+        repeatChar '=' $seperatorCount
         echo 'INFORMATION:'
         repeatChar '=' $seperatorCount
         printLine "last redirect" "$lastRedirect"
@@ -642,11 +643,13 @@ function doSecurityTest {
         fi
         repeatChar '=' $seperatorCount
         echo
+        repeatChar '=' $seperatorCount
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
         printMultipleStringWithLineNumber "$lastHeader"
         repeatChar '=' $seperatorCount
         echo
+        repeatChar '=' $seperatorCount
         echo 'TESTS:'
         repeatChar '=' $seperatorCount
     fi

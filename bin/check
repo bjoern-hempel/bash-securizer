@@ -633,6 +633,8 @@ function doSecurityTest {
     local domain=$(getDomainFromFullDomain "$fullDomain")
     local ip=$(getIpFromDomain "$fullDomain")
     local body=$(getBody "$usedUrl")
+    local bodySize=$(echo "$body" | wc -c | xargs)
+    local headerSize=$(echo "$lastHeader" | wc -c | xargs)
     local secure=true && [[ "$lastRedirect" =~ ^https ]] || secure=false
     local os=$(getOS)
     local nameserver=$(getNameserver "$domain")
@@ -654,6 +656,8 @@ function doSecurityTest {
         else
             printLine "secure connection" "no"                                                                                                                                           
         fi
+        printLine "header size" "$headerSize Byte"
+        printLine "body size" "$bodySize Byte"
         printLine "full domain" "$fullDomain"
         printLine "domain" "$domain"
         printLine "ip address" "$ip"

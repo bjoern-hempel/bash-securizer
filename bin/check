@@ -622,12 +622,19 @@ function doSecurityTest {
     (! [[ "$usedUrl" =~ ^https? ]]) && usedUrl="http://$usedUrl"
     local header=$(getHeader "$usedUrl")
 
-    # if we do have a ssl error try to use http
-    local sslError=$(echo "$header" | grep --color=never "SSL: no alternative certificate subject name")
-    if [ "$sslError" != "" ] && [[ "$usedUrl" =~ ^https ]]; then
-        usedUrl=$(echo "$usedUrl" | sed 's/^https/http/')
-        header=$(getHeader "$usedUrl")
-        hintUrl=" (SSL error)"
+    # if we do have a curl error
+    local curlError=$(echo "$header" | grep --color=never "curl: ([0-9]\+)" | sed -e 's/^curl:[ ]*([0-9][0-9]*)[ ]*//')
+    if [ "$curlError" != "" ]; then
+        # SSL error while trying to request a https connection
+        if [[ "$curlError" =~ SSL ]] && [[ "$usedUrl" =~ ^https ]]; then
+            # try to get a http connection
+            usedUrl=$(echo "$usedUrl" | sed 's/^https/http/')
+            header=$(getHeader "$usedUrl")
+            hintUrl=" (SSL error)"
+        else
+            echo "Unknown curl error: $curlError"
+            exit
+        fi
     fi
 
     local lastHeader=$(getLastHeaderFromHeader "$header")

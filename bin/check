@@ -116,6 +116,10 @@ function hasRedirectFromHeader {
     return 0
 }
 
+function getLastRedirectFromUrl {
+    curl -Ls -o /dev/null -w %{url_effective} "$1"
+}
+
 function getLastRedirectFromHeader {
     local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
     local url="$2"
@@ -132,52 +136,9 @@ function getLastRedirectFromHeader {
     fi
 
     # remove some special chars
-    targetCurrent=$(echo -e -n "$targetCurrent" | xargs | tr -dc ':/.\-[:alnum:]')
+    targetCurrent=$(echo -e -n "$targetCurrent" | xargs | tr -dc ':/.\-_[:alnum:]')
 
     echo "$targetCurrent"
-}
-
-function checkLink {
-    local domain="$1"
-    local targetExpected="$2"
-    local testState=$3
-    local numberCurrentTest=$4
-    local numberAllTests=$5
-    local state=0
-    local header=""
-
-    echo "$numberCurrentTest/$numberAllTests) check domain $domain"
-    echo "target expected: $targetExpected "
-
-    # fetch header
-    if ! $testState; then
-        header=$(getHeader "$domain")
-    fi
-
-    # extract redirect
-    if hasRedirectFromHeader "$header"; then
-        targetCurrent=$(getLastRedirectFromHeader "$header")
-    else
-        targetCurrent="no redirect was found"
-    fi
-
-    echo "target current:  $targetCurrent"
-
-    echo -n "State: "
-    if $testState || [ "$targetCurrent" == "$targetExpected" ]; then
-        echo -e "\e[42mOK\e[0m"
-        state=0
-    else
-        echo -e "\e[41mNOT OK\e[0m"
-        state=1
-    fi
-
-    echo ""
-
-    # simulate positive state
-    $testState && return 0
-
-    return $state
 }
 
 function getLastHeader {
@@ -624,7 +585,7 @@ function doSecurityTest {
 
     local header=$(getHeader "$url")
     local lastHeader=$(getLastHeaderFromHeader "$header")
-    local lastRedirect=$(getLastRedirectFromHeader "$header" "$url")
+    local lastRedirect=$(getLastRedirectFromUrl "$url")
     local fullDomain=$(getFullDomainFromUrl "$lastRedirect")
     local domain=$(getDomainFromFullDomain "$fullDomain")
     local ip=$(getIpFromDomain "$fullDomain")

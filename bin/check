@@ -630,7 +630,7 @@ function doSecurityTest {
     if $SHOW_HEADER; then
         echo
         repeatChar '=' $seperatorCount
-        echo 'INFORMATION:'
+        echo 'INFORMATIONS:'
         repeatChar '=' $seperatorCount
         printLine "given address" "$url"
         printLine "last redirect" "$lastRedirect"

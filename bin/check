@@ -149,7 +149,7 @@ function getLastHeader {
 }
 
 function getLastHeaderFromHeader {
-    local header=$(echo "$1" | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
+    local header=$(echo "$1" | awk '/^HTTP\/1.[01] 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
     echo "$header"
 }
 

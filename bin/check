@@ -7,7 +7,6 @@
 # Todo:
 # - ssl certificate check
 # - https check
-# - X-Generator check (potsdam.de)
 # - Secure-Links count check
 # - informations
 #   - ip
@@ -627,6 +626,7 @@ function doSecurityTest {
     local os=$(getOS)
     local nameserver=$(getNameserver "$domain")
     local provider=$(getProviderFromIP "$ip")
+    local counter=0
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -645,12 +645,14 @@ function doSecurityTest {
         printLine "full domain" "$fullDomain"
         printLine "domain" "$domain"
         printLine "ip address" "$ip"
-        local counter=0
-        while read -r ns; do
+        counter=0; while read -r ns; do
             ((counter++))
             printLine "nameserver $counter" "$ns"
         done <<< "$nameserver"
-        printLine "provider" "$provider"
+        counter=0; while read -r p; do
+            ((counter++))
+            printLine "provider $counter" "$p"
+        done <<< "$provider"
         printLine "operating system" "$os"
         repeatChar '=' $seperatorCount
         echo && echo

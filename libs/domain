@@ -30,6 +30,28 @@ function getNameserver {
 
 function getProviderFromIP {
     local ip="$1"
-    whois "$ip" | grep --color=never "descr:" | head -1 | cut -d":" -f2 | xargs
+    local whoisResult=$(whois "$ip")
+    local provider=""
+
+    local orgName=$(\
+        echo "$whoisResult" | \
+        grep --color=never "org-name:" | \
+        cut -d":" -f2 | \
+        sed 's/^[ ]*//g'
+    )
+
+    local descr=$(\
+        echo "$whoisResult" | \
+        grep --color=never "descr:" | \
+        cut -d":" -f2 | \
+        sed 's/^[ ]*//g'
+    )
+
+    [ "orgName" != "" ]; provider="$provider$orgName"
+    [ "descr" != "" ]; provider="$provider$descr"
+
+    [ "$provider" == "" ] && provider="Unknown"
+
+    echo "$provider" | sed 's/\n$//g'
 }
 

@@ -340,17 +340,28 @@ function doHstsCheck {
 
     # check given header
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | \
+        awk '!(tolower($0) ~ /[:;][ ]*max-age/)' \
+    )
+
+    # we found insecure headers
+    if [ "$headerFilteredNotSecured" != "" ]; then
+        printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
+        return 1
+    fi
+
+    # check given header
+    local headerFilteredNotOptimal=$(echo -n "$headerFiltered" | \
         awk '!(tolower($0) ~ /[:;][ ]*max-age/ && tolower($0) ~ /[:;][ ]*includesubdomains/ && tolower($0) ~ /[:;][ ]*preload/)' \
     )
 
-    if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+    if [ "$headerFilteredNotOptimal" != "" ]; then
+        printSuccess "$checkName" true
+        $verbose && printBulletItem "It is recommended to include the attributes includesubdomains and preload."
         return 0
     fi
 
-    # given headers do have some issues
-    printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
-    return 1
+    printSuccess "$checkName"
+    return 0
 }
 
 function doCspCheck {

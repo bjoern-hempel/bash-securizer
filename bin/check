@@ -723,7 +723,7 @@ function doSecurityTest {
 
     # print overall state
     if [ $stateOverall -eq 0 ]; then
-        printSuccess "State" false "$stateOverall/$testCount tests passed."
+        printSuccess "State" false "$testCount/$testCount tests passed."
     else
         printError "State" false "$stateOverall/$testCount tests failed. Check the errors before."
     fi

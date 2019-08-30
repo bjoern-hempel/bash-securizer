@@ -93,7 +93,7 @@ done
 declare -A domains
 
 function getHeader {
-    curl -IL -A "$userAgent" "$1" 2>&1
+    curl -ILsS -A "$userAgent" "$1" 2>&1
 }
 
 function getBody {

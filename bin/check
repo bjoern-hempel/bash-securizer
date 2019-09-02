@@ -17,7 +17,11 @@
 # script path
 scriptPath="$(dirname "$(readlink "$0")")"
 
-# include os library
+# include some libraries
+source "$scriptPath/../libs/tools"
+source "$scriptPath/../libs/output"
+source "$scriptPath/../libs/request"
+source "$scriptPath/../libs/analyse"
 source "$scriptPath/../libs/os"
 source "$scriptPath/../libs/cert"
 source "$scriptPath/../libs/domain"
@@ -52,6 +56,9 @@ sslWarningDays=14
 # initial values
 SHOW_HEADER=false
 
+# declare domains variable
+declare -A domains
+
 # read arguments
 # help:
 # help: Usage: %scriptname% [options...] {install|update|status}
@@ -83,147 +90,6 @@ while [[ $# > 0 ]]; do
     esac
     shift
 done
-
-# assign mode to executionType var
-#if [ ! -z ${PARAMETERS[0]} ]; then
-#    executionType="${PARAMETERS[0]}"
-#fi
-
-# declare domains variable
-declare -A domains
-
-function getHeader {
-    curl -ILsS -A "$userAgent" "$1" 2>&1
-}
-
-function getBody {
-    curl -L -A "$userAgent" $1 2>&1
-}
-
-function repeatChar {
-    local input="$1"
-    local count="$2"
-
-    printf "%${count}s\n" | sed -e "s/ /$input/g"
-}
-
-function hasRedirectFromHeader {
-    local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
-
-    # no Location header was found
-    [ "$targetCurrent" == "" ] && return 1
-
-    # header was found
-    return 0
-}
-
-function getLastRedirectFromUrl {
-    curl -Ls -o /dev/null -w %{url_effective} "$1"
-}
-
-function getLastRedirectFromHeader {
-    local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
-    local url="$2"
-
-    # no Location header was found
-    if [ "$targetCurrent" == "" ]; then
-        targetCurrent="$url"
-
-        if [[ "$targetCurrent" =~ ^http(s)*:// ]]; then
-            echo "$targetCurrent" && return
-        fi
-
-        echo "http://$targetCurrent" && return
-    fi
-
-    # remove some special chars
-    targetCurrent=$(echo -e -n "$targetCurrent" | xargs | tr -dc ':/.\-_[:alnum:]')
-
-    echo "$targetCurrent"
-}
-
-function getLastHeader {
-    local url="$1"
-    local header=$(curl -sIL "$url" 2>&1 | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
-    echo "$header"
-}
-
-function getLastHeaderFromHeader {
-    local header=$(echo "$1" | awk '/^HTTP\/1.[01] 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
-    echo "$header"
-}
-
-function printLine {
-    local caption="$1"
-    local value="$2"
-    [ "$caption" != "" ] && caption="$caption:"
-    printf '%-'$titleSpace's %s\n' "$caption" "$value"
-}
-
-function printHeader {
-    echo ""
-    echo "---"
-    echo "${1^^}"
-    echo "---"
-}
-
-function printSuccess {
-    local title="$1"
-    local warning=${2:-false}
-    local textPassed="${3:-Test passed.}"
-
-    local warningText=" → But check the following warnings." && $warning || warningText=""
-    [ "$title" != "" ] && title="$title:"
-
-    local format='\e[43m' && $warning || format='\e[42m'
-
-    printf '%-'$titleSpace's '$format'%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
-}
-
-function printWarning {
-    local text="$1"
-    local title="  Warning:"
-
-    printf '%-'$titleSpace's \e[43m%s\e[0m\n' "$title" "$text"
-}
-
-function printError {
-    local title="$1"
-    local hint="${2:-}"
-    local textPassed="${3:-Test failed.}"
-
-    local hintText=" → $hint" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
-    [ "$title" != "" ] && title="$title:"
-
-    printf '%-'$titleSpace's \e[41m%s\e[0m%s\n' "$title" "$textPassed" "$hintText"
-}
-
-function printStandard {
-    local title="$1"
-    local text="${2:-}"
-    [ "$title" != "" ] && title="$title:"
-
-    printf '%-'$titleSpace's %s\n' "$title" "$text"
-}
-
-function printBulletItem {
-    local texts="${1:-}"
-
-    while read -r text; do
-        printf '%-'$titleSpace's - %s\n' "" "$text"
-    done <<< "$texts"
-}
-
-function printErrorIncludingMessage {
-    printError "$1" "$2"
-    echo "$3" | sed 's/^/> /'
-}
-
-function printMultipleStringWithLineNumber {
-    local leadingZeros=$(printf "%d" $(echo "$1" | wc -l | xargs) | wc -c | xargs)
-
-    echo "$1" | sed '/^$/d' | awk '{printf "%0'$leadingZeros'd %s\n", NR, $0}'
-}
 
 function doHttpStatusCheck {
     local statusCode=200

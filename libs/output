@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+function printLine {
+    local caption="$1"
+    local value="$2"
+    [ "$caption" != "" ] && caption="$caption:"
+    printf '%-'$titleSpace's %s\n' "$caption" "$value"
+}
+
+function printHeader {
+    echo ""
+    echo "---"
+    echo "${1^^}"
+    echo "---"
+}
+
+function printSuccess {
+    local title="$1"
+    local warning=${2:-false}
+    local textPassed="${3:-Test passed.}"
+
+    local warningText=" → But check the following warnings." && $warning || warningText=""
+    [ "$title" != "" ] && title="$title:"
+
+    local format='\e[43m' && $warning || format='\e[42m'
+
+    printf '%-'$titleSpace's '$format'%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
+}
+
+function printWarning {
+    local text="$1"
+    local title="  Warning:"
+
+    printf '%-'$titleSpace's \e[43m%s\e[0m\n' "$title" "$text"
+}
+
+function printError {
+    local title="$1"
+    local hint="${2:-}"
+    local textPassed="${3:-Test failed.}"
+
+    local hintText=" → $hint" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
+    [ "$title" != "" ] && title="$title:"
+
+    printf '%-'$titleSpace's \e[41m%s\e[0m%s\n' "$title" "$textPassed" "$hintText"
+}
+
+function printStandard {
+    local title="$1"
+    local text="${2:-}"
+    [ "$title" != "" ] && title="$title:"
+
+    printf '%-'$titleSpace's %s\n' "$title" "$text"
+}
+
+function printBulletItem {
+    local texts="${1:-}"
+
+    while read -r text; do
+        printf '%-'$titleSpace's - %s\n' "" "$text"
+    done <<< "$texts"
+}
+
+function printErrorIncludingMessage {
+    printError "$1" "$2"
+    echo "$3" | sed 's/^/> /'
+}
+
+function printMultipleStringWithLineNumber {
+    local leadingZeros=$(printf "%d" $(echo "$1" | wc -l | xargs) | wc -c | xargs)
+
+    echo "$1" | sed '/^$/d' | awk '{printf "%0'$leadingZeros'd %s\n", NR, $0}'
+}
+

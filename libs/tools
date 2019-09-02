@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+function repeatChar {
+    local input="$1"
+    local count="$2"
+
+    printf "%${count}s\n" | sed -e "s/ /$input/g"
+}
+

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+function hasRedirectFromHeader {
+    local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
+
+    # no Location header was found
+    [ "$targetCurrent" == "" ] && return 1
+
+    # header was found
+    return 0
+}
+
+function getLastRedirectFromHeader {
+    local targetCurrent=$(echo "$1" | grep --color=never Location | tail -n 1 | sed 's/^Location: //')
+    local url="$2"
+
+    # no Location header was found
+    if [ "$targetCurrent" == "" ]; then
+        targetCurrent="$url"
+
+        if [[ "$targetCurrent" =~ ^http(s)*:// ]]; then
+            echo "$targetCurrent" && return
+        fi
+
+        echo "http://$targetCurrent" && return
+    fi
+
+    # remove some special chars
+    targetCurrent=$(echo -e -n "$targetCurrent" | xargs | tr -dc ':/.\-_[:alnum:]')
+
+    echo "$targetCurrent"
+}
+
+function getLastHeaderFromHeader {
+    local header=$(echo "$1" | awk '/^HTTP\/1.[01] 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
+    echo "$header"
+}
+

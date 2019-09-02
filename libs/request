@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+function getHeader {
+    curl -ILsS -A "$userAgent" "$1" 2>&1
+}
+
+function getBody {
+    curl -L -A "$userAgent" $1 2>&1
+}
+
+function getLastRedirectFromUrl {                                                                                                                                                        
+    curl -Ls -o /dev/null -w %{url_effective} "$1"
+}
+
+function getLastHeader {
+    local url="$1"
+    local header=$(curl -sIL "$url" 2>&1 | awk '/^HTTP\/1.1 3[0-9][0-9]/{while(getline && $0 != "\r"){}}1' | tr -d '\r' | awk NF)
+    echo "$header"
+}
+

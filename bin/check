@@ -55,9 +55,7 @@ sslWarningDays=14
 
 # initial values
 SHOW_HEADER=false
-
-# declare domains variable
-declare -A domains
+SHOW_DNS=false
 
 # read arguments
 # help:
@@ -67,6 +65,11 @@ while [[ $# > 0 ]]; do
         # help:         --show-header             Show all headers next to the test.
         --show-header)
             SHOW_HEADER=true
+            ;;
+
+        # help:         --show-dns                Show the dns settings next to the test.
+        --show-header)
+            SHOW_DNS=true
             ;;
 
         # help:  -h,    --help                    Shows this help.
@@ -508,6 +511,7 @@ function doSecurityTest {
     local fullDomain=$(getFullDomainFromUrl "$lastRedirect")
     local domain=$(getDomainFromFullDomain "$fullDomain")
     local ip=$(getIpFromDomain "$fullDomain")
+    local dnsSettings=$(getDNSSettingsFromDomain "$domain")
     local body=$(getBody "$usedUrl")
     local bodySize=$(echo "$body" | wc -c | xargs)
     local headerSize=$(echo "$lastHeader" | wc -c | xargs)
@@ -548,12 +552,21 @@ function doSecurityTest {
         printLine "operating system" "$os"
         repeatChar '=' $seperatorCount
         echo && echo
+
+        repeatChar '=' $seperatorCount
+        echo 'DNS SETTINGS:'
+        repeatChar '=' $seperatorCount
+        echo "$dnsSettings"
+        repeatChar '=' $seperatorCount
+        echo && echo
+
         repeatChar '=' $seperatorCount
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
         printMultipleStringWithLineNumber "$lastHeader"
         repeatChar '=' $seperatorCount
         echo && echo
+
         repeatChar '=' $seperatorCount
         echo 'TESTS:'
         repeatChar '=' $seperatorCount

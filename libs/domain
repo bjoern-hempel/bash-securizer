@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+function getDNSSettingsFromDomain {
+    local domain="$1"
+    host -a "$domain"
+}
+
 function getFullDomainFromUrl {
     local url="$1"
     echo "$url" | sed -e 's|^[^/]*//||' -e 's|/.*$||' | rev | cut -d"@" -f1 | rev

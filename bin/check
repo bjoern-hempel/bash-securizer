@@ -57,6 +57,9 @@ sslWarningDays=14
 SHOW_HEADER=false
 SHOW_DNS=false
 
+# output variable
+OUTPUT=""
+
 # read arguments
 # help:
 # help: Usage: %scriptname% [options...] {install|update|status}
@@ -104,7 +107,7 @@ function doHttpStatusCheck {
     if [[ "$headerFiltered" =~ HTTP/1.1[[:space:]]([0-9]*) ]]; then
         local content=${BASH_REMATCH[1]}
 
-				if [ "$content" == "$statusCode" ]; then
+        if [ "$content" == "$statusCode" ]; then
             printSuccess "$checkName"
             return 0
         else
@@ -490,8 +493,9 @@ function doMdCheck {
 }
 
 function doSecurityTest {
-    local stateOverall=0
-    local testCount=1
+    local countTestFail=0
+    local countTestAll=0
+    local countTestSuccess=0
     local url="$1"
     local hintUrl=""
     local usedUrl="$url"
@@ -529,26 +533,81 @@ function doSecurityTest {
     local counter=0
     local statusCode=0
 
+    # do http status check
+    ((++countTestAll)) &&  OUTPUT="$OUTPUT"$(doHttpStatusCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do https check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHttpsCheck "$lastRedirect")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do ssl check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSslCheck "$lastRedirect" "$(getOS)")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do X-Powered-By check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXPoweredCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do X-Generator check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXGeneratorCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do cookie check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHeaderCookieCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do HTTP Strict Transport Security check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHstsCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do Content-Security-Policy check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCspCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do X-XSS-Protection Header check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXssCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do X-Content-Type-Options check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCtoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do X-Frame-Options check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do Referrer-Policy Header check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doRpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do Feature-Policy Header check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do Server Header check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doShCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do Cross-Original-Destination check (rel links)
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSlCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do generator meta-tag check
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doMdCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+
+    # do CAA DNS check
+    # TODO
+
+
+    # calculate the successful tests
+    countTestSuccess=$(expr $countTestAll - $countTestFail)
+
     # print header for debugging reasons
     if $SHOW_HEADER; then
         echo
         repeatChar '=' $seperatorCount
         echo 'INFORMATIONS:'
         repeatChar '=' $seperatorCount
-        printLine "given address" "$url$hintUrl"
-        printLine "used address" "$usedUrl"
-        printLine "last redirect" "$lastRedirect"
+        printLine "Given address" "$url$hintUrl"
+        printLine "Used address" "$usedUrl"
+        printLine "Last redirect" "$lastRedirect"
         if $secure; then
-            printLine "secure connection" "yes"
-            printLine "valid days ssl certificate" $(validDaysOfCert "$fullDomain" "$os")
+            printLine "Secure connection" "yes"
+            printLine "Valid days ssl certificate" $(validDaysOfCert "$fullDomain" "$os")
         else
-            printLine "secure connection" "no"                                                                                                                                           
+            printLine "Secure connection" "no"
         fi
-        printLine "header size" "$headerSize Byte"
-        printLine "body size" "$bodySize Byte"
-        printLine "full domain" "$fullDomain"
-        printLine "domain" "$domain"
-        printLine "ip address" "$ip"
+        printLine "Header size" "$headerSize Byte"
+        printLine "Body size" "$bodySize Byte"
+        printLine "Full domain" "$fullDomain"
+        printLine "Domain" "$domain"
+        printLine "IP address" "$ip"
         counter=0; while read -r ns; do
             ((counter++))
             [ $counter -eq 1 ] && printLine "nameserver" "$ns" || printLine "" "$ns"
@@ -557,7 +616,10 @@ function doSecurityTest {
             ((counter++))
             [ $counter -eq 1 ] && printLine "provider" "$p" || printLine "" "$p"
         done <<< "$provider"
-        printLine "operating system" "$os"
+        printLine "Successful tests" "$countTestSuccess"
+        printLine "Failed tests" "$countTestFail"
+        printLine "Total number of tests" "$countTestAll"
+        printLine "Operating system" "$os"
         repeatChar '=' $seperatorCount
         echo && echo
 
@@ -580,66 +642,16 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
     fi
 
-    # do http status check
-    ((testCount++)) && ( ! doHttpStatusCheck "$lastHeader" ) && ((stateOverall++))
-
-    # do https check
-    ((testCount++)) && ( ! doHttpsCheck "$lastRedirect" ) && ((stateOverall++))
-
-    # do ssl check
-    ((testCount++)) && ( ! doSslCheck "$lastRedirect" "$(getOS)" ) && ((stateOverall++))
-
-    # do X-Powered-By check
-    ((testCount++)) && ( ! doXPoweredCheck "$lastHeader" ) && ((stateOverall++))
-
-    # do X-Generator check
-    ((testCount++)) && ( ! doXGeneratorCheck "$lastHeader" ) && ((stateOverall++))
-
-    # do cookie check
-    ((testCount++)) && ( ! doHeaderCookieCheck "$lastHeader" ) && ((stateOverall++))
-
-    # do HTTP Strict Transport Security check
-    ((testCount++)) && ( ! doHstsCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do Content-Security-Policy check
-    ((testCount++)) && ( ! doCspCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do X-XSS-Protection Header check
-    ((testCount++)) && ( ! doXssCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do X-Content-Type-Options check
-    ((testCount++)) && ( ! doCtoCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do X-Frame-Options check
-    ((testCount++)) && ( ! doFoCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do Referrer-Policy Header check
-    ((testCount++)) && ( ! doRpCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do Feature-Policy Header check
-    ((testCount++)) && ( ! doFpCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do Server Header check
-    ((testCount++)) && ( ! doShCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do Cross-Original-Destination check (rel links)
-    ((testCount++)) && ( ! doSlCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do generator meta-tag check
-    ((testCount++)) && ( ! doMdCheck "$lastHeader" "$body" ) && ((stateOverall++))
-
-    # do CAA DNS check
-
+    echo -en "$OUTPUT"
     repeatChar '-' $seperatorCount
-    ((testCount--))
 
     # print overall state
-    if [ $stateOverall -eq 0 ]; then
-        printSuccess "State" false "$testCount/$testCount tests passed."
+    if [ $countTestFail -eq 0 ]; then
+        statusCode=0
+        printSuccess "State" false "$countTestAll/$countTestAll tests passed."
     else
         statusCode=1
-
-        printError "State" false "$stateOverall/$testCount tests failed. Check the errors before."
+        printError "State" false "$countTestFail/$countTestAll tests failed. Check the errors before."
     fi
 
     if $SHOW_HEADER; then
@@ -652,6 +664,28 @@ function doSecurityTest {
 
 # start the test
 if [ "$executionType" == "check" ]; then
+
+#function testCheck {
+#    [ $1 -eq 1 ] && echo '111' || echo '000'
+#    [ $1 -eq 1 ] && echo 'error' || echo 'success'
+#    [ $1 -eq 1 ] && return 1 || return 0
+#}
+
+
+#allCount=1
+#successCount=0
+
+#((allCount++)) && output=$(testCheck 1); status=$? && [ $status -eq 0 ] && ((successCount++))
+#echo $output; echo $status
+#((allCount++)) && output=$(testCheck 0); status=$? && [ $status -eq 0 ] && ((successCount++))
+#echo $output; echo $status
+#((allCount++)) && output=$(testCheck 0); status=$? && [ $status -eq 0 ] && ((successCount++))
+#echo $output; echo $status
+
+#((allCount--))
+#echo "$successCount / $allCount"
+#exit 0
+
 
     # Parameter one is expected as a config file
     if [ ${#PARAMETERS[@]} -lt 1 ]; then

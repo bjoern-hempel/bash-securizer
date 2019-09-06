@@ -441,8 +441,8 @@ function doSlCheck {
 
     local numberLinksUnsecure=$(\
         echo "$body" | \
-        sed 's/<a /\'$'\n<a /g' | \
         xmllint --nowarning --html --xpath '//a[contains(@target, "_blank") and (starts-with(@href, "http") or starts-with(@href, "//")) and (not(contains(@rel, "noopener")) or not(contains(@rel, "noreferrer")))]' - 2>/dev/null | \
+        sed 's/><a />\'$'\n<a /g' | \
         grep '<a ' | \
         wc -l | \
         xargs \

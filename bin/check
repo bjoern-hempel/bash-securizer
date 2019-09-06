@@ -450,7 +450,7 @@ function doSlCheck {
 
     # we do have some insecure links
     if [ $numberLinksUnsecure -gt 0 ]; then
-        printError "$checkName" "Found $numberLinksUnsecure links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
+        printError "$checkName" "Found $numberLinksUnsecure external links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
         return 1
     fi
 

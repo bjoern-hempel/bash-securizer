@@ -279,9 +279,15 @@ function doCspCheck {
 
     # some warning checks
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | grep -i --color=never "unsafe-inline")
-
     if [ "$headerFilteredNotSecured" != "" ]; then
+        [ "$warningText" != "" ] && warningText="$warningText\n"
         warningText="$warningText"$(printBulletItem "It is not recommend to use the setting \"unsafe-inline\".")
+    fi
+
+    local headerFilteredNotSecured=$(echo -n "$headerFiltered" | grep -i --color=never "unsafe-eval")
+    if [ "$headerFilteredNotSecured" != "" ]; then
+        [ "$warningText" != "" ] && warningText="$warningText\n"
+        warningText="$warningText"$(printBulletItem "It is not recommend to use the setting \"unsafe-eval\".")
     fi
 
     # print status text

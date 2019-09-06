@@ -521,6 +521,7 @@ function doSecurityTest {
     local nameserver=$(getNameserver "$domain")
     local provider=$(getProviderFromIP "$ip")
     local counter=0
+    local statusCode=0
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -630,6 +631,8 @@ function doSecurityTest {
     if [ $stateOverall -eq 0 ]; then
         printSuccess "State" false "$testCount/$testCount tests passed."
     else
+        statusCode=1
+
         printError "State" false "$stateOverall/$testCount tests failed. Check the errors before."
     fi
 
@@ -637,6 +640,8 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         echo
     fi
+
+    return $statusCode
 }
 
 # start the test
@@ -652,5 +657,11 @@ if [ "$executionType" == "check" ]; then
 
     # start redirect checker
     doSecurityTest "$url"
+
+    # get last exit code
+    status=$?
+
+    # throw status code
+    exit $status
 fi
 

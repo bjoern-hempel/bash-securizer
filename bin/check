@@ -665,28 +665,6 @@ function doSecurityTest {
 # start the test
 if [ "$executionType" == "check" ]; then
 
-#function testCheck {
-#    [ $1 -eq 1 ] && echo '111' || echo '000'
-#    [ $1 -eq 1 ] && echo 'error' || echo 'success'
-#    [ $1 -eq 1 ] && return 1 || return 0
-#}
-
-
-#allCount=1
-#successCount=0
-
-#((allCount++)) && output=$(testCheck 1); status=$? && [ $status -eq 0 ] && ((successCount++))
-#echo $output; echo $status
-#((allCount++)) && output=$(testCheck 0); status=$? && [ $status -eq 0 ] && ((successCount++))
-#echo $output; echo $status
-#((allCount++)) && output=$(testCheck 0); status=$? && [ $status -eq 0 ] && ((successCount++))
-#echo $output; echo $status
-
-#((allCount--))
-#echo "$successCount / $allCount"
-#exit 0
-
-
     # Parameter one is expected as a config file
     if [ ${#PARAMETERS[@]} -lt 1 ]; then
         echo "The URL or IP to be checked was not passed." && exit 1

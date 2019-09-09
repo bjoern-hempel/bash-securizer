@@ -249,7 +249,8 @@ function doHeaderCookieCheck {
     local header="$1"
     local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /;[ ]*httponly/ && tolower($0) ~ /;[ ]*secure/)')
-    local headerFilteredNotRecommend=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /;[ ]*samesite=/)')
+    local headerFilteredSamesite=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /;[ ]*samesite=/)')
+    local headerFilteredPrefix=$(echo -n "$headerFiltered" | awk '!($0 ~ /^Set-Cookie:[ ]*__HOST-/)')
 
     # given headers do have some issues
     if [ "$headerFilteredNotSecured" != "" ]; then
@@ -257,9 +258,23 @@ function doHeaderCookieCheck {
         return 2
     fi
 
-    # given headers do have some small issues
-    if [ "$headerFilteredNotRecommend" != "" ]; then
-        printWarning $VERBOSE_MODE "header" "$checkName" "It is recommend to use the \"samesite\" parameter."$'\n'"$headerFilteredNotRecommend"
+    local warning=""
+
+    # given headers do not have samesite flag
+    if [ "$headerFilteredSamesite" != "" ]; then
+        [ "$warning" != "" ] && warning+=$'\n'
+        warning+="It is recommend to use the \"samesite\" parameter."$'\n'"$headerFilteredSamesite"
+    fi
+
+    # given headers do not have samesite flag
+    if [ "$headerFilteredPrefix" != "" ]; then
+        [ "$warning" != "" ] && warning+=$'\n'
+        warning+="It is recommend to use a cookie prefix: __HOST or __SECURE."$'\n'"$headerFilteredPrefix"
+    fi
+
+    # print warning and some recommendations
+    if [ "$warning" != "" ]; then
+        printWarning $VERBOSE_MODE "header" "$checkName" "$warning"
         return 1
     fi
 
@@ -286,7 +301,7 @@ function doHstsCheck {
 
     # we found insecure headers
     if [ "$headerFilteredNotSecured" != "" ]; then
-        printError "header" "$checkName" "$defaultHeaderErrorText\n$headerFilteredNotSecured"
+        printError "header" "$checkName" "$defaultHeaderErrorText"$'\n'"$headerFilteredNotSecured"
         return 2
     fi
 
@@ -320,20 +335,20 @@ function doCspCheck {
     # some error checks
     local error=false
     if $error; then
-        printError "header" "$checkName" "$defaultHeaderErrorText\n$headerFilteredNotSecured"
+        printError "header" "$checkName" "$defaultHeaderErrorText"$'\n'"$headerFilteredNotSecured"
         return 2
     fi
 
     # some warning checks
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | grep -i --color=never "unsafe-inline")
     if [ "$headerFilteredNotSecured" != "" ]; then
-        [ "$warningText" != "" ] && warningText="$warningText\n"
+        [ "$warningText" != "" ] && warningText="$warningText"$'\n'
         warningText+="It is not recommend to use the setting \"unsafe-inline\"."
     fi
 
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | grep -i --color=never "unsafe-eval")
     if [ "$headerFilteredNotSecured" != "" ]; then
-        [ "$warningText" != "" ] && warningText="$warningText\n"
+        [ "$warningText" != "" ] && warningText="$warningText"$'\n'
         warningText+="It is not recommend to use the setting \"unsafe-eval\"."
     fi
 
@@ -474,7 +489,7 @@ function doShCheck {
     local contentCheck=true && [[ "$content" =~ ^[a-zA-Z]+$ ]] || contentCheck=false
 
     if ! $contentCheck; then
-        printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure.\nContent: $content"
+        printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure."$'\n'"Content: $content"
         return 2
     fi
 
@@ -523,7 +538,7 @@ function doMdCheck {
     )
 
     if [ "$metaGenerator" != "" ]; then
-        printError $VERBOSE_MODE "html" "$checkName" "Found meta generator tag.\nContent: \"$metaGenerator\""
+        printError $VERBOSE_MODE "html" "$checkName" "Found meta generator tag."$'\n'"Content: \"$metaGenerator\""
         return 2
     fi
 

@@ -86,7 +86,7 @@ while [[ $# > 0 ]]; do
             ;;
 
         # help:          --show-dns                Show the dns settings next to the test.
-        --show-header)
+        --show-dns)
             SHOW_DNS=true
             ;;
 

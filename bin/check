@@ -259,7 +259,7 @@ function doHeaderCookieCheck {
 
     # given headers do have some small issues
     if [ "$headerFilteredNotRecommend" != "" ]; then
-        printWarning $VERBOSE_MODE "header" "$checkName" "It is recommend to use the \"samesite\" parameter.\n$headerFilteredNotRecommend"
+        printWarning $VERBOSE_MODE "header" "$checkName" "It is recommend to use the \"samesite\" parameter."$'\n'"$headerFilteredNotRecommend"
         return 1
     fi
 

@@ -15,36 +15,37 @@ function printHeader {
 }
 
 function printSuccess {
-    local typeOutput="${1:-header}"
-    local title="$2"
-    local warning=${3:-false}
-    local textPassed="${4:-Test passed.}"
+    local verbose=${1:-false}
+    local typeOutput="${2:-header}"
+    local title="$3"
+    local hints="${4:-}"
+    local warning=${5:-false}
+    local textPassed="${6:-Test passed.}"
+    local warningText=""
 
-    local warningText=" → But check the following warnings." && $warning || warningText=""
+    $verbose && $warning && warningText=" \e[3m(But check the following warnings)\e[0m"
     [ "$title" != "" ] && title="$title:"
 
     local format='\e[43m' && $warning || format='\e[42m'
-
     printf '%-'$typeSpace's %-'$titleSpace's '$format'%s\e[0m%s\n' "[$typeOutput]" "$title" "$textPassed" "$warningText"
+    $verbose && [ "$hints" != "" ] && [ "$hints" != "false" ] && showLines "$hints"
 }
 
 function printWarning {
-    local text="$1"
-    local title="  Warning:"
-
-    printf '%-'$titleSpace's \e[43m%s\e[0m\n' "$title" "$text"
+    printSuccess "$1" "$2" "$3" "$4" true
 }
 
 function printError {
-    local typeOutput="${1:-header}"
-    local title="$2"
-    local hint="${3:-}"
-    local textPassed="${4:-Test failed.}"
+    local verbose=${1:-false}
+    local typeOutput="${2:-header}"
+    local title="$3"
+    local hints="${4:-}"
+    local textPassed="${5:-Test failed.}"
 
-    local hintText=" → $hint" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
     [ "$title" != "" ] && title="$title:"
 
-    printf '%-'$typeSpace's %-'$titleSpace's \e[41m%s\e[0m%s\n' "[$typeOutput]" "$title" "$textPassed" "$hintText"
+    printf '%-'$typeSpace's %-'$titleSpace's \e[41m%s\e[0m\n' "[$typeOutput]" "$title" "$textPassed"
+    $verbose && [ "$hints" != "" ] && [ "$hints" != "false" ] && showLines "$hints"
 }
 
 function printStandard {
@@ -58,14 +59,13 @@ function printStandard {
 function printBulletItem {
     local texts="${1:-}"
 
+    if [ "$texts" == "" ]; then
+        return
+    fi
+
     while read -r text; do
         printf '%-'$(expr $typeSpace + $titleSpace + 1)'s → %s\n' "" "$text"
     done <<< "$texts"
-}
-
-function printErrorIncludingMessage {
-    printError "$1" "$2" "$3"
-    showLines "$4"
 }
 
 function printMultipleStringWithLineNumber {

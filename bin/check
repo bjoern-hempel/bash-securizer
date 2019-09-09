@@ -26,6 +26,9 @@ source "$scriptPath/../libs/os"
 source "$scriptPath/../libs/cert"
 source "$scriptPath/../libs/domain"
 
+# scriptname
+scriptName=$(basename "$0")
+
 # initial values
 executionType="check"
 
@@ -59,6 +62,10 @@ sslWarningDays=14
 # initial values
 SHOW_HEADER=false
 SHOW_DNS=false
+BASH_OUTPUT=true
+JSON_OUTPUT=false
+MARKDOWN_OUTPUT=false
+OUTPUT_FORMAT='bash'
 
 # output variable
 OUTPUT=""
@@ -68,28 +75,55 @@ POINTS_MAX=0
 POINTS_REACHED=0
 
 # read arguments
+# help: Usage: %scriptname% [OPTIONS] url
 # help:
-# help: Usage: %scriptname% [options...] {install|update|status}
+# help:   This script checks a given url for security.
+# help:
+# help: Options:
 while [[ $# > 0 ]]; do
     case "$1" in
-        # help:         --show-header             Show all headers next to the test.
+        # help:          --show-header             Show all headers next to the test.
         --show-header)
             SHOW_HEADER=true
             ;;
 
-        # help:         --show-dns                Show the dns settings next to the test.
+        # help:          --show-dns                Show the dns settings next to the test.
         --show-header)
             SHOW_DNS=true
             ;;
 
-        # help:  -h,    --help                    Shows this help.
+        # help:   -b,    --bash                    Returns the result in bash text format.
+        -b|--bash)
+            BASH_OUTPUT=true
+            JSON_OUTPUT=false
+            MARKDOWN_OUTPUT=false
+            OUTPUT_FORMAT='bash'
+            ;;
+
+        # help:   -j,    --json                    Returns the result in JSON format.
+        -j|--json)
+            BASH_OUTPUT=false
+            JSON_OUTPUT=true
+            MARKDOWN_OUTPUT=false
+            OUTPUT_FORMAT='json'
+            ;;
+
+        # help:   -m,    --markdown                Returns the result in MARKDOWN format.
+        -m|--markdown)
+            BASH_OUTPUT=false
+            JSON_OUTPUT=false
+            MARKDOWN_OUTPUT=true
+            OUTPUT_FORMAT='markdown'
+            ;;
+
+        # help:   -h,    --help                    Shows this help.
         # help:
         -h|--help)
-            cat "$BASH_SOURCE" | grep --color=never "# help:" | grep -v 'cat parameter' | sed 's/[ ]*# help:[ ]*//g' | sed "s~%scriptname%~$scriptname~g"
+            cat "$BASH_SOURCE" | grep --color=never "# help:" | grep -v 'cat parameter' | sed -E 's/[ ]*#[ ]*help:[ ]?//g' | sed "s~%scriptname%~$scriptName~g"
             exit 0
             ;;
 
-        # help:  -v,    --version                 Shows the version number.
+        # help:   -v,    --version                 Shows the version number.
         # help:
         -v|--version)
             [ "$(type -t showVersion)" == "function" ] && showVersion || echo "Create a showVersion function to show some text here."

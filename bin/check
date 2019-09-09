@@ -63,6 +63,10 @@ SHOW_DNS=false
 # output variable
 OUTPUT=""
 
+# for calculation of check index
+POINTS_MAX=0
+POINTS_REACHED=0
+
 # read arguments
 # help:
 # help: Usage: %scriptname% [options...] {install|update|status}
@@ -116,14 +120,14 @@ function doHttpStatusCheck {
         else
             printError "http status" "$checkName" "Status code $statusCode was not found."
             $verbose && printBulletItem "Status code: $content"
-            return 1
+            return 2
         fi
     fi
 
     # no header was found
     printSuccess "http status" "$checkName" true
     $verbose && printBulletItem "No $filter header was found. Usually one is expected."
-    return 0
+    return 1
 }
 
 function doHttpsCheck {
@@ -136,7 +140,7 @@ function doHttpsCheck {
     fi
 
     printError "http status" "$checkName" "The page is not securely transmitted."
-    return 1
+    return 2
 }
 
 
@@ -152,11 +156,11 @@ function doSslCheck {
         if [ "$validDays" -lt $sslErrorDays ]; then
             printError "ssl" "$checkName"
             $verbose && printBulletItem "only $validDays days left"
-            return 1
+            return 2
         elif [ "$validDays" -lt $sslWarningDays ]; then
             printSuccess "ssl" "$checkName" true
             $verbose && printBulletItem "only $validDays days left"
-            return 0
+            return 1
         else
             printSuccess "ssl" "$checkName"
             $verbose && printBulletItem "$validDays days left"
@@ -165,7 +169,7 @@ function doSslCheck {
     fi
 
     printError "ssl" "$checkName" "The page is not securely transmitted."
-    return 1
+    return 2
 }
 
 function doXPoweredCheck {
@@ -185,7 +189,7 @@ function doXPoweredCheck {
 
     printError "header" "$checkName" "\"$filter\" header was found and is not secure."
     $verbose && printBulletItem "Content: $content"
-    return 1
+    return 2
 }
 
 function doXGeneratorCheck {
@@ -205,7 +209,7 @@ function doXGeneratorCheck {
 
     printError "header" "$checkName" "\"$filter\" header was found and is not secure."
     $verbose && printBulletItem "Content: $content"
-    return 1
+    return 2
 }
 
 function doHeaderCookieCheck {
@@ -213,16 +217,26 @@ function doHeaderCookieCheck {
     local filter="Cookie"
     local header="$1"
     local headerFiltered=$(echo -n "$header" | grep -i --color=never "$filter:")
-    local headerFilteredNotSecured=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /[ ]*httponly/ && tolower($0) ~ /;[ ]*secure/)')
-
-    if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "header" "$checkName"
-        return 0
-    fi
+    local headerFilteredNotSecured=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /;[ ]*httponly/ && tolower($0) ~ /;[ ]*secure/)')
+    local headerFilteredNotRecommend=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /;[ ]*samesite=/)')
 
     # given headers do have some issues
-    printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
-    return 1
+    if [ "$headerFilteredNotSecured" != "" ]; then
+        printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
+        return 2
+    fi
+
+    # given headers do have some small issues
+    if [ "$headerFilteredNotRecommend" != "" ]; then
+        warningText="$warningText"$(printBulletItem "It is recommend to use the \"samesite\" parameter.")
+        printSuccess "header" "$checkName" true
+        echo -e "$warningText"
+        showLines "$headerFilteredNotRecommend"
+        return 1
+    fi
+
+    printSuccess "header" "$checkName"
+    return 0
 }
 
 function doHstsCheck {
@@ -234,7 +248,7 @@ function doHstsCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     # check given header
@@ -245,7 +259,7 @@ function doHstsCheck {
     # we found insecure headers
     if [ "$headerFilteredNotSecured" != "" ]; then
         printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
-        return 1
+        return 2
     fi
 
     # check given header
@@ -256,7 +270,7 @@ function doHstsCheck {
     if [ "$headerFilteredNotOptimal" != "" ]; then
         printSuccess "header" "$checkName" true
         $verbose && printBulletItem "It is recommended to include the attributes includesubdomains and preload."
-        return 0
+        return 1
     fi
 
     printSuccess "header" "$checkName"
@@ -273,14 +287,14 @@ function doCspCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     # some error checks
     local error=false
     if $error; then
         printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
-        return 1
+        return 2
     fi
 
     # some warning checks
@@ -299,11 +313,12 @@ function doCspCheck {
     # print status text
     if [ "$warningText" == "" ]; then
         printSuccess "header" "$checkName"
+        return 0
     else
         printSuccess "header" "$checkName" true
         echo -e "$warningText"
+        return 1
     fi
-    return 0
 }
 
 function doXssCheck {
@@ -315,7 +330,7 @@ function doXssCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     local headerFilteredNotSecured=""
@@ -324,7 +339,7 @@ function doXssCheck {
         return 0
     fi
 
-    return 1
+    return 2
 }
 
 function doCtoCheck {
@@ -336,7 +351,7 @@ function doCtoCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     local headerFilteredNotSecured=""
@@ -346,7 +361,7 @@ function doCtoCheck {
         return 0
     fi
 
-    return 1
+    return 2
 }
 
 function doFoCheck {
@@ -358,7 +373,7 @@ function doFoCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     local headerFilteredNotSecured=""
@@ -368,7 +383,7 @@ function doFoCheck {
         return 0
     fi
 
-    return 1
+    return 2
 }
 
 function doRpCheck {
@@ -380,7 +395,7 @@ function doRpCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$checkName\" header was found."
-        return 1
+        return 2
     fi
 
     local headerFilteredNotSecured=""
@@ -390,7 +405,7 @@ function doRpCheck {
         return 0
     fi
 
-    return 1
+    return 2
 }
 
 function doFpCheck {
@@ -402,7 +417,7 @@ function doFpCheck {
     # no header was found
     if [ "$headerFiltered" == "" ]; then
         printError "header" "$checkName" "No \"$filter\" header was found."
-        return 1
+        return 2
     fi
 
     local headerFilteredNotSecured=""
@@ -412,7 +427,7 @@ function doFpCheck {
         return 0
     fi
 
-    return 1
+    return 2
 }
 
 function doShCheck {
@@ -435,12 +450,12 @@ function doShCheck {
     if ! $contentCheck; then
         printError "header" "$checkName" "\"$filter\" header was found and is not secure."
         $verbose && printBulletItem "Content: $content"
-        return 1
+        return 2
     fi
 
     printSuccess "header" "$checkName" true
     $verbose && printBulletItem "If possible, disable the following content: \"$content\""
-    return 0
+    return 1
 }
 
 function doSlCheck {
@@ -462,7 +477,7 @@ function doSlCheck {
     # we do have some insecure links
     if [ $numberLinksUnsecure -gt 0 ]; then
         printError "html" "$checkName" "Found $numberLinksUnsecure external links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
-        return 1
+        return 2
     fi
 
     # all links are safe
@@ -486,7 +501,7 @@ function doMdCheck {
     if [ "$metaGenerator" != "" ]; then
         printError "html" "$checkName" "Found meta generator tag."
         $verbose && printBulletItem "Content: \"$metaGenerator\""
-        return 1
+        return 2
     fi
 
     # no meta generator value was found.
@@ -536,59 +551,77 @@ function doSecurityTest {
     local statusCode=0
 
     # do http status check
-    ((++countTestAll)) &&  OUTPUT="$OUTPUT"$(doHttpStatusCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) &&  OUTPUT="$OUTPUT"$(doHttpStatusCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do https check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHttpsCheck "$lastRedirect")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHttpsCheck "$lastRedirect")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do ssl check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSslCheck "$lastRedirect" "$(getOS)")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSslCheck "$lastRedirect" "$(getOS)")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do X-Powered-By check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXPoweredCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXPoweredCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do X-Generator check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXGeneratorCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXGeneratorCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do cookie check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHeaderCookieCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHeaderCookieCheck "$lastHeader")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do HTTP Strict Transport Security check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHstsCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doHstsCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do Content-Security-Policy check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCspCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCspCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do X-XSS-Protection Header check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXssCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doXssCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do X-Content-Type-Options check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCtoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doCtoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do X-Frame-Options check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFoCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do Referrer-Policy Header check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doRpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doRpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do Feature-Policy Header check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doFpCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do Server Header check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doShCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doShCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do Cross-Original-Destination check (rel links)
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSlCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doSlCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do generator meta-tag check
-    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doMdCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 0 ] && ((countTestFail++))
+    ((++countTestAll)) && OUTPUT="$OUTPUT"$(doMdCheck "$lastHeader" "$body")$'\n'; statusCode=$? && [ $statusCode -gt 1 ] && ((++countTestFail))
+    POINTS_MAX=$(expr $POINTS_MAX + 2); POINTS_REACHED=$(expr $POINTS_REACHED + 2 - $statusCode)
 
     # do CAA DNS check
     # TODO
 
-
     # calculate the successful tests
     countTestSuccess=$(expr $countTestAll - $countTestFail)
+
+    # test index
+    local checkIndex=$((100 * $POINTS_REACHED / $POINTS_MAX))
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -596,6 +629,7 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         echo 'INFORMATIONS:'
         repeatChar '=' $seperatorCount
+        printLine "Check index" "$checkIndex%"
         printLine "Given address" "$url$hintUrl"
         printLine "Used address" "$usedUrl"
         printLine "Last redirect" "$lastRedirect"

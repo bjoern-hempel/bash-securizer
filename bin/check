@@ -35,6 +35,9 @@ PARAMETERS=()
 # sets the title space
 titleSpace=35
 
+# sets the type space
+typeSpace=14
+
 # sets the seperator count
 seperatorCount=80
 
@@ -108,17 +111,17 @@ function doHttpStatusCheck {
         local content=${BASH_REMATCH[1]}
 
         if [ "$content" == "$statusCode" ]; then
-            printSuccess "$checkName"
+            printSuccess "http status" "$checkName"
             return 0
         else
-            printError "$checkName" "Status code $statusCode was not found."
+            printError "http status" "$checkName" "Status code $statusCode was not found."
             $verbose && printBulletItem "Status code: $content"
             return 1
         fi
     fi
 
     # no header was found
-    printSuccess "$checkName" true
+    printSuccess "http status" "$checkName" true
     $verbose && printBulletItem "No $filter header was found. Usually one is expected."
     return 0
 }
@@ -128,11 +131,11 @@ function doHttpsCheck {
     local lastRedirect="$1"
 
     if [[ "$lastRedirect" =~ ^https ]]; then
-        printSuccess "$checkName"
+        printSuccess "http status" "$checkName"
         return 0
     fi
 
-    printError "$checkName" "The page is not securely transmitted."
+    printError "http status" "$checkName" "The page is not securely transmitted."
     return 1
 }
 
@@ -147,21 +150,21 @@ function doSslCheck {
         validDays=$(validDaysOfCert "$domain" "$os")
 
         if [ "$validDays" -lt $sslErrorDays ]; then
-            printError "$checkName"
+            printError "ssl" "$checkName"
             $verbose && printBulletItem "only $validDays days left"
             return 1
         elif [ "$validDays" -lt $sslWarningDays ]; then
-            printSuccess "$checkName" true
+            printSuccess "ssl" "$checkName" true
             $verbose && printBulletItem "only $validDays days left"
             return 0
         else
-            printSuccess "$checkName"
+            printSuccess "ssl" "$checkName"
             $verbose && printBulletItem "$validDays days left"
             return 0
         fi
     fi
 
-    printError "$checkName" "The page is not securely transmitted."
+    printError "ssl" "$checkName" "The page is not securely transmitted."
     return 1
 }
 
@@ -173,14 +176,14 @@ function doXPoweredCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printSuccess "$checkName" 
+        printSuccess "header" "$checkName"
         return 0
     fi
 
     # header was found -> check header
     local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
 
-    printError "$checkName" "\"$filter\" header was found and is not secure."
+    printError "header" "$checkName" "\"$filter\" header was found and is not secure."
     $verbose && printBulletItem "Content: $content"
     return 1
 }
@@ -193,14 +196,14 @@ function doXGeneratorCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printSuccess "$checkName" 
+        printSuccess "header" "$checkName"
         return 0
     fi
 
     # header was found -> check header
     local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
 
-    printError "$checkName" "\"$filter\" header was found and is not secure."
+    printError "header" "$checkName" "\"$filter\" header was found and is not secure."
     $verbose && printBulletItem "Content: $content"
     return 1
 }
@@ -213,12 +216,12 @@ function doHeaderCookieCheck {
     local headerFilteredNotSecured=$(echo -n "$headerFiltered" | awk '!(tolower($0) ~ /[ ]*httponly/ && tolower($0) ~ /;[ ]*secure/)')
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
     # given headers do have some issues
-    printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
+    printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
     return 1
 }
 
@@ -230,7 +233,7 @@ function doHstsCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
@@ -241,7 +244,7 @@ function doHstsCheck {
 
     # we found insecure headers
     if [ "$headerFilteredNotSecured" != "" ]; then
-        printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
+        printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
         return 1
     fi
 
@@ -251,12 +254,12 @@ function doHstsCheck {
     )
 
     if [ "$headerFilteredNotOptimal" != "" ]; then
-        printSuccess "$checkName" true
+        printSuccess "header" "$checkName" true
         $verbose && printBulletItem "It is recommended to include the attributes includesubdomains and preload."
         return 0
     fi
 
-    printSuccess "$checkName"
+    printSuccess "header" "$checkName"
     return 0
 }
 
@@ -269,14 +272,14 @@ function doCspCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
     # some error checks
     local error=false
     if $error; then
-        printErrorIncludingMessage "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
+        printErrorIncludingMessage "header" "$checkName" "$defaultHeaderErrorText" "$headerFilteredNotSecured"
         return 1
     fi
 
@@ -295,9 +298,9 @@ function doCspCheck {
 
     # print status text
     if [ "$warningText" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
     else
-        printSuccess "$checkName" true
+        printSuccess "header" "$checkName" true
         echo -e "$warningText"
     fi
     return 0
@@ -311,14 +314,13 @@ function doXssCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
     local headerFilteredNotSecured=""
-                                                                                                                                                                                         
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -333,14 +335,14 @@ function doCtoCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
     local headerFilteredNotSecured=""
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -355,14 +357,14 @@ function doFoCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
     local headerFilteredNotSecured=""
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -377,14 +379,14 @@ function doRpCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$checkName\" header was found."
+        printError "header" "$checkName" "No \"$checkName\" header was found."
         return 1
     fi
 
     local headerFilteredNotSecured=""
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -399,14 +401,14 @@ function doFpCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printError "$checkName" "No \"$filter\" header was found."
+        printError "header" "$checkName" "No \"$filter\" header was found."
         return 1
     fi
 
     local headerFilteredNotSecured=""
 
     if [ "$headerFilteredNotSecured" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -421,7 +423,7 @@ function doShCheck {
 
     # no header was found
     if [ "$headerFiltered" == "" ]; then
-        printSuccess "$checkName"
+        printSuccess "header" "$checkName"
         return 0
     fi
 
@@ -431,12 +433,12 @@ function doShCheck {
     local contentCheck=true && [[ "$content" =~ ^[a-zA-Z]+$ ]] || contentCheck=false
 
     if ! $contentCheck; then
-        printError "$checkName" "\"$filter\" header was found and is not secure."
+        printError "header" "$checkName" "\"$filter\" header was found and is not secure."
         $verbose && printBulletItem "Content: $content"
         return 1
     fi
 
-    printSuccess "$checkName" true
+    printSuccess "header" "$checkName" true
     $verbose && printBulletItem "If possible, disable the following content: \"$content\""
     return 0
 }
@@ -459,12 +461,12 @@ function doSlCheck {
 
     # we do have some insecure links
     if [ $numberLinksUnsecure -gt 0 ]; then
-        printError "$checkName" "Found $numberLinksUnsecure external links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
+        printError "html" "$checkName" "Found $numberLinksUnsecure external links with target \"_blank\" and without rel attribute \"noopener\" and \"noreferrer\"."
         return 1
     fi
 
     # all links are safe
-    printSuccess "$checkName"
+    printSuccess "html" "$checkName"
     return 0
 }
 
@@ -482,13 +484,13 @@ function doMdCheck {
     )
 
     if [ "$metaGenerator" != "" ]; then
-        printError "$checkName" "Found meta generator tag."
+        printError "html" "$checkName" "Found meta generator tag."
         $verbose && printBulletItem "Content: \"$metaGenerator\""
         return 1
     fi
 
     # no meta generator value was found.
-    printSuccess "$checkName"
+    printSuccess "html" "$checkName"
     return 0
 }
 
@@ -648,10 +650,10 @@ function doSecurityTest {
     # print overall state
     if [ $countTestFail -eq 0 ]; then
         statusCode=0
-        printSuccess "State" false "$countTestAll/$countTestAll tests passed."
+        printSuccess "summary" "State" false "$countTestAll/$countTestAll tests passed."
     else
         statusCode=1
-        printError "State" false "$countTestFail/$countTestAll tests failed. Check the errors before."
+        printError "summary" "State" false "$countTestFail/$countTestAll tests failed. Check the errors before."
     fi
 
     if $SHOW_HEADER; then

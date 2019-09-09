@@ -4,7 +4,7 @@ function printLine {
     local caption="$1"
     local value="$2"
     [ "$caption" != "" ] && caption="$caption:"
-    printf '%-'$titleSpace's %s\n' "$caption" "$value"
+    printf '%-'$(expr $titleSpace + $typeSpace)'s %s\n' "$caption" "$value"
 }
 
 function printHeader {
@@ -15,16 +15,17 @@ function printHeader {
 }
 
 function printSuccess {
-    local title="$1"
-    local warning=${2:-false}
-    local textPassed="${3:-Test passed.}"
+    local typeOutput="${1:-header}"
+    local title="$2"
+    local warning=${3:-false}
+    local textPassed="${4:-Test passed.}"
 
     local warningText=" → But check the following warnings." && $warning || warningText=""
     [ "$title" != "" ] && title="$title:"
 
     local format='\e[43m' && $warning || format='\e[42m'
 
-    printf '%-'$titleSpace's '$format'%s\e[0m%s\n' "$title" "$textPassed" "$warningText"
+    printf '%-'$typeSpace's %-'$titleSpace's '$format'%s\e[0m%s\n' "[$typeOutput]" "$title" "$textPassed" "$warningText"
 }
 
 function printWarning {
@@ -35,14 +36,15 @@ function printWarning {
 }
 
 function printError {
-    local title="$1"
-    local hint="${2:-}"
-    local textPassed="${3:-Test failed.}"
+    local typeOutput="${1:-header}"
+    local title="$2"
+    local hint="${3:-}"
+    local textPassed="${4:-Test failed.}"
 
     local hintText=" → $hint" && [ "$hint" != "" ] && [ "$hint" != "false" ] || hintText=""
     [ "$title" != "" ] && title="$title:"
 
-    printf '%-'$titleSpace's \e[41m%s\e[0m%s\n' "$title" "$textPassed" "$hintText"
+    printf '%-'$typeSpace's %-'$titleSpace's \e[41m%s\e[0m%s\n' "[$typeOutput]" "$title" "$textPassed" "$hintText"
 }
 
 function printStandard {
@@ -57,13 +59,13 @@ function printBulletItem {
     local texts="${1:-}"
 
     while read -r text; do
-        printf '%-'$titleSpace's - %s\n' "" "$text"
+        printf '%-'$(expr $typeSpace + $titleSpace + 1)'s - %s\n' "" "$text"
     done <<< "$texts"
 }
 
 function printErrorIncludingMessage {
-    printError "$1" "$2"
-    echo "$3" | sed 's/^/> /'
+    printError "$1" "$2" "$3"
+    echo "$4" | sed 's/^/> /'
 }
 
 function printMultipleStringWithLineNumber {

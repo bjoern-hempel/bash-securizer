@@ -7,3 +7,57 @@ function repeatChar {
     printf "%${count}s\n" | sed -e "s/ /$input/g"
 }
 
+# read label percent percentDegraded < <(getLabelByPercent 95 2)
+function getLabelByPercent() {
+    # pick of the parameters
+    local percentGiven=$1
+    local numberFailed=${2:-0}
+
+    # some configs
+    local distance=3
+    local distanceFailed=2
+
+    # some needed variables
+    local modulo
+    local letterNumber
+    local letter
+    local percent
+
+    # calculate degraded percent
+    local percentDegraded=$(($percentGiven - $distanceFailed * $numberFailed))
+    [ $percentDegraded -lt 0 ] && percentDegraded=0
+
+    # build labels array ( [percent]=label ... )
+    declare -A labels
+    for i in $(seq 1 15); do
+        percent=$(expr 100 - $i \* $distance)
+        modulo=$((($i - 1) % 3))
+        letterNumber=$((($i - $modulo - 1) / 3))
+        letter=$(printf "\x$(printf %x $((65 + $letterNumber)))")
+
+        [ $modulo -eq 0 ] && letter+='+'
+        [ $modulo -eq 2 ] && letter+='-'
+
+        labels[$percent]=$letter
+    done
+    labels[0]='F'
+
+    # extract the keys in reverse order
+    declare -a keys
+    for key in "${!labels[@]}"; do
+        keys=($key ${keys[@]})
+    done
+
+    # find the label
+    for key in "${keys[@]}"; do
+        if [ $percentDegraded -ge $key ]; then
+            echo "${labels[$key]}" "$percentGiven" "$percentDegraded"
+            return 0
+        fi
+    done
+
+    # no label was found
+    echo "${labels[0]}" "$percentGiven" "$percentDegraded"
+    return 0
+}
+

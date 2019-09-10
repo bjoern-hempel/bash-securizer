@@ -660,6 +660,7 @@ function doSecurityTest {
 
     # test index
     local checkIndex=$((100 * $POINTS_REACHED / $POINTS_MAX))
+    read label percent percentDegraded < <(getLabelByPercent $checkIndex $countTestFail)
 
     # print header for debugging reasons
     if $SHOW_HEADER; then
@@ -667,7 +668,9 @@ function doSecurityTest {
         repeatChar '=' $seperatorCount
         echo 'INFORMATIONS:'
         repeatChar '=' $seperatorCount
-        printLine "Check index" "$checkIndex%"
+        printLine "Check index" "$percent%"
+        printLine "Check index degraded" "$percentDegraded%"
+        printLine "Label" "$label"
         printLine "Given address" "$url$hintUrl"
         printLine "Used address" "$usedUrl"
         printLine "Last redirect" "$lastRedirect"

@@ -56,15 +56,25 @@ sslErrorDays=7
 # ssl warning days (must be greater than sslErrorDays)
 sslWarningDays=14
 
-# initial values
+# initial values (amount of informations)
 SHOW_INFORMATIONS=false
 SHOW_HEADER=false
 SHOW_DNS=false
 SHOW_EXTRA=false
+
+# ínitial values (format)
 BASH_OUTPUT=true
 JSON_OUTPUT=false
 MARKDOWN_OUTPUT=false
 OUTPUT_FORMAT='bash'
+
+# initial values (test)
+SHOW_TEST_FULL=true
+SHOW_TEST_COUNT=false
+SHOW_TEST_PERCENT=false
+SHOW_TEST_LABEL=false
+
+# initial values (other)
 VERBOSE_MODE=false
 
 # output variable
@@ -100,6 +110,7 @@ while [[ $# > 0 ]]; do
             SHOW_EXTRA=true
             ;;
 
+        # help:
         # help:   -b,    --bash                    Returns the result in bash text format.
         -b|--bash)
             BASH_OUTPUT=true
@@ -122,6 +133,25 @@ while [[ $# > 0 ]]; do
             JSON_OUTPUT=false
             MARKDOWN_OUTPUT=true
             OUTPUT_FORMAT='markdown'
+            ;;
+
+        # help:
+        # help:          --show-test-count         Only shows the test count results
+        --show-test-count)
+            SHOW_TEST_FULL=false
+            SHOW_TEST_COUNT=true
+            ;;
+
+        # help:          --show-test-percent       Only shows the percent value of test result
+        --show-test-percent)
+            SHOW_TEST_FULL=false
+            SHOW_TEST_PERCENT=true
+            ;;
+
+        # help:          --show-test-label         Only shows the test label
+        --show-test-label)
+            SHOW_TEST_FULL=false
+            SHOW_TEST_LABEL=true
             ;;
 
         # help:
@@ -737,26 +767,63 @@ function doSecurityTest {
         echo 'TESTS:'
         repeatChar '=' $seperatorCount
     else
-        echo
+        $SHOW_TEST_FULL && echo
     fi
 
-    echo -en "$OUTPUT"
-    repeatChar '-' $seperatorCount
+    # show test result
+    if $SHOW_TEST_FULL; then
+        echo -en "$OUTPUT"
+        repeatChar '-' $seperatorCount
+    fi
 
     # print overall state
+    local shortInfo
     if [ $countTestFail -eq 0 ]; then
         statusCode=0
-        printSuccess $VERBOSE_MODE "summary" "State" "$countTestAll/$countTestAll tests passed."
+        if $SHOW_TEST_FULL; then
+            shortInfo=""
+            printSuccess $VERBOSE_MODE "summary" "State" "$countTestAll/$countTestAll tests passed."
+        fi
+        if $SHOW_TEST_COUNT; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$countTestSuccess/$countTestAll"
+        fi
+        if $SHOW_TEST_PERCENT; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$percentDegraded%"
+        fi
+        if $SHOW_TEST_LABEL; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$label"
+        fi
     else
         statusCode=1
-        printError $VERBOSE_MODE "summary" "State" "$countTestFail/$countTestAll tests failed."
+        if $SHOW_TEST_FULL; then
+            shortInfo=""
+            printError $VERBOSE_MODE "summary" "State" "$countTestFail/$countTestAll tests failed."
+        fi
+        if $SHOW_TEST_COUNT; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$countTestSuccess/$countTestAll"
+        fi
+        if $SHOW_TEST_PERCENT; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$percentDegraded%"
+        fi
+        if $SHOW_TEST_LABEL; then
+            [ "$shortInfo" != "" ] && shortInfo+=" "
+            shortInfo="$shortInfo$label"
+        fi
     fi
 
-    if $SHOW_HEADER; then
+    # print short info
+    [ "$shortInfo" != "" ] && echo "$shortInfo"
+
+    if $SHOW_EXTRA; then
         repeatChar '=' $seperatorCount
         echo
     else
-        echo
+        $SHOW_TEST_FULL && echo
     fi
 
     return $statusCode

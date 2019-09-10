@@ -57,8 +57,10 @@ sslErrorDays=7
 sslWarningDays=14
 
 # initial values
+SHOW_INFORMATIONS=false
 SHOW_HEADER=false
 SHOW_DNS=false
+SHOW_EXTRA=false
 BASH_OUTPUT=true
 JSON_OUTPUT=false
 MARKDOWN_OUTPUT=false
@@ -77,17 +79,25 @@ POINTS_REACHED=0
 # help:
 # help:   This script checks a given url for security.
 # help:
-# help: Options:
+# help: Options
 while [[ $# > 0 ]]; do
     case "$1" in
-        # help:          --show-header             Show all headers next to the test.
-        --show-header)
-            SHOW_HEADER=true
+        # help:          --show-informations       Show all informations next to the test.
+        --show-informations)
+            SHOW_INFORMATIONS=true
+            SHOW_EXTRA=true
             ;;
 
         # help:          --show-dns                Show the dns settings next to the test.
         --show-dns)
             SHOW_DNS=true
+            SHOW_EXTRA=true
+            ;;
+
+        # help:          --show-header             Show all headers next to the test.
+        --show-header)
+            SHOW_HEADER=true
+            SHOW_EXTRA=true
             ;;
 
         # help:   -b,    --bash                    Returns the result in bash text format.
@@ -663,7 +673,7 @@ function doSecurityTest {
     read label percent percentDegraded < <(getLabelByPercent $checkIndex $countTestFail)
 
     # print header for debugging reasons
-    if $SHOW_HEADER; then
+    if $SHOW_INFORMATIONS; then
         echo
         repeatChar '=' $seperatorCount
         echo 'INFORMATIONS:'
@@ -698,22 +708,31 @@ function doSecurityTest {
         printLine "Total number of tests" "$countTestAll"
         printLine "Operating system" "$os"
         repeatChar '=' $seperatorCount
-        echo && echo
+        echo
+    fi
 
+    if $SHOW_DNS; then
+        echo
         repeatChar '=' $seperatorCount
         echo 'DNS SETTINGS:'
         repeatChar '=' $seperatorCount
         echo "$dnsSettings"
         repeatChar '=' $seperatorCount
-        echo && echo
+        echo
+    fi
 
+    if $SHOW_HEADER; then
+        echo
         repeatChar '=' $seperatorCount
         echo 'HEADER:'
         repeatChar '=' $seperatorCount
         printMultipleStringWithLineNumber "$lastHeader"
         repeatChar '=' $seperatorCount
-        echo && echo
+        echo
+    fi
 
+    if $SHOW_EXTRA; then
+        echo
         repeatChar '=' $seperatorCount
         echo 'TESTS:'
         repeatChar '=' $seperatorCount

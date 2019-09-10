@@ -220,7 +220,7 @@ function doXPoweredCheck {
     # header was found -> check header
     local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
 
-    printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure.\nContent: $content"
+    printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure."$'\n'"Content: $content"
     return 2
 }
 
@@ -239,7 +239,7 @@ function doXGeneratorCheck {
     # header was found -> check header
     local content=$(echo -n "$headerFiltered" | sed -e 's/^[0-9]*[ ]*'$filter': //')
 
-    printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure.\nContent: $content"
+    printError $VERBOSE_MODE "header" "$checkName" "\"$filter\" header was found and is not secure."$'\n'"Content: $content"
     return 2
 }
 

@@ -568,7 +568,7 @@ function doSecurityTest {
             hintUrl=" (SSL error)"
         else
             echo "Unknown curl error: $curlError"
-            exit
+            exit 1
         fi
     fi
 

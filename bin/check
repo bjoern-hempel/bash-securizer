@@ -254,7 +254,7 @@ function doHeaderCookieCheck {
 
     # given headers do have some issues
     if [ "$headerFilteredNotSecured" != "" ]; then
-        printError "header" "$checkName" "$defaultHeaderErrorText\n$headerFilteredNotSecured"
+        printError $VERBOSE_MODE "header" "$checkName" "$defaultHeaderErrorText"$'\n'"$headerFilteredNotSecured"
         return 2
     fi
 

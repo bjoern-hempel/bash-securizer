@@ -45,8 +45,11 @@ function getLabelByPercent() {
     # extract the keys in reverse order
     declare -a keys
     for key in "${!labels[@]}"; do
-        keys=($key ${keys[@]})
+        keys+=( $key )
     done
+
+    # reverse sort
+    keys=( $(echo ${keys[*]} | tr ' ' '\n' | sort -nr) )
 
     # find the label
     for key in "${keys[@]}"; do

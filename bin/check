@@ -84,6 +84,16 @@ OUTPUT=""
 POINTS_MAX=0
 POINTS_REACHED=0
 
+# environment variables
+bashVersion=${BASH_VERSINFO[0]}
+minBashVersion=4
+
+# check bash version
+if [ $bashVersion -lt $minBashVersion ]; then
+    printf "At least bash version %d is required to run this script. Your bash version: %s"$'\n' $minBashVersion $BASH_VERSION
+    exit 2
+fi
+
 # read arguments
 # help: Usage: %scriptname% [OPTIONS] url
 # help:

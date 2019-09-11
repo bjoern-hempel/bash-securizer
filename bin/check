@@ -56,6 +56,9 @@ sslErrorDays=7
 # ssl warning days (must be greater than sslErrorDays)
 sslWarningDays=14
 
+# needed software
+neededSoftware=( awk bc cat curl cut grep head host openssl printf rev sed sort tail tr type wc whois xargs xmllint )
+
 # initial values (amount of informations)
 SHOW_INFORMATIONS=false
 SHOW_HEADER=false
@@ -92,6 +95,25 @@ minBashVersion=4
 if [ $bashVersion -lt $minBashVersion ]; then
     printf "At least bash version %d is required to run this script. Your bash version: %s"$'\n' $minBashVersion $BASH_VERSION
     exit 2
+fi
+
+# check installed software
+softwareOk=true
+softwareDist=10
+OUTPUT_SOFTWARE=""
+for software in "${neededSoftware[@]}"; do
+    if applicationExists $software; then
+        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s →   \e[42m%s\e[0m" "$software" "[ installed ]")$'\n'
+    else
+        softwareOk=false
+        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s →   \e[41m%s\e[0m" "$software" "[  missing  ]")$'\n'
+    fi
+done
+if ! $softwareOk; then
+    echo
+    echo -e "$OUTPUT_SOFTWARE"
+    echo -e "At least one software is not available on this system to execute the script properly. Please check your installation.\n"
+    exit 3
 fi
 
 # read arguments

@@ -57,12 +57,31 @@ sslErrorDays=7
 sslWarningDays=14
 
 # needed software
-neededSoftware=( awk bc cat curl cut grep head host openssl printf rev sed sort tail tr type wc whois xargs xmllint )
+osName=$(getOS)
+neededSoftware=( awk bc cat curl cut grep head host openssl printf rev sed sort tail tr wc whois xargs xmllint )
+declare -A svc
+                            svc[awk]="awk --version | head -n 1"
+                            svc[bc]="bc --version | head -n 1"
+                            svc[curl]="curl --version | head -n 1"
+[ "$osName" == "linux" ] && svc[cut]="cut --version | head -n 1"
+                            svc[grep]="grep --version | head -n 1"
+[ "$osName" == "linux" ] && svc[head]="head --version | head -n 1"
+                            svc[openssl]="openssl version"
+[ "$osName" == "linux" ] && svc[rev]="rev -V"
+[ "$osName" == "linux" ] && svc[sed]="sed --version | head -n 1"
+                            svc[sort]="sort --version | head -n 1"
+[ "$osName" == "linux" ] && svc[tail]="tail --version | head -n 1"
+[ "$osName" == "linux" ] && svc[tr]="tr --version | head -n 1"
+[ "$osName" == "linux" ] && svc[wc]="wc --version | head -n 1"
+[ "$osName" == "linux" ] && svc[whois]="whois --version | head -n 1"
+[ "$osName" == "linux" ] && svc[xargs]="xargs --version | head -n 1"
+                            svc[xmllint]="xmllint --version 2>&1 | head -n 1"
 
 # initial values (amount of informations)
 SHOW_INFORMATIONS=false
 SHOW_HEADER=false
 SHOW_DNS=false
+SHOW_SOFTWARE=false
 SHOW_EXTRA=false
 
 # ínitial values (format)
@@ -103,10 +122,14 @@ softwareDist=10
 OUTPUT_SOFTWARE=""
 for software in "${neededSoftware[@]}"; do
     if applicationExists $software; then
-        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s →   \e[42m%s\e[0m" "$software" "[ installed ]")$'\n'
+        softwareVersion=""
+        if [[ -v "svc[$software]" ]] ; then
+            softwareVersion=" → version: "$(eval ${svc[$software]})
+        fi
+        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s \e[42m%s\e[0m%s" "$software:" "[ installed ]" "$softwareVersion")$'\n'
     else
         softwareOk=false
-        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s →   \e[41m%s\e[0m" "$software" "[  missing  ]")$'\n'
+        OUTPUT_SOFTWARE+=$(printf "%-"$softwareDist"s \e[41m%s\e[0m" "$software:" "[  missing  ]")$'\n'
     fi
 done
 if ! $softwareOk; then
@@ -139,6 +162,21 @@ while [[ $# > 0 ]]; do
         # help:          --show-header             Show all headers next to the test.
         --show-header)
             SHOW_HEADER=true
+            SHOW_EXTRA=true
+            ;;
+
+        # help:          --show-software           Show the software installation next to the test.
+        --show-software)
+            SHOW_SOFTWARE=true
+            SHOW_EXTRA=true
+            ;;
+
+        # help:          --show-all                Show all informations.
+        --show-all)
+            SHOW_INFORMATIONS=true
+            SHOW_DNS=true
+            SHOW_HEADER=true
+            SHOW_SOFTWARE=true
             SHOW_EXTRA=true
             ;;
 
@@ -769,6 +807,16 @@ function doSecurityTest {
         printLine "Failed tests" "$countTestFail"
         printLine "Total number of tests" "$countTestAll"
         printLine "Operating system" "$os"
+        repeatChar '=' $seperatorCount
+        echo
+    fi
+
+    if $SHOW_SOFTWARE; then
+        echo
+        repeatChar '=' $seperatorCount
+        echo 'INSTALLED SOFTWARE:'
+        repeatChar '=' $seperatorCount
+        echo -en "$OUTPUT_SOFTWARE"
         repeatChar '=' $seperatorCount
         echo
     fi

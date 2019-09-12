@@ -104,6 +104,8 @@ user$ bash-securizer ressourcenmangel.de --verbose
 
 ## Some integration modes
 
+The integration modes are intended to integrate this script into other test scripts. This allows tests to be carried out automatically and the test results to be read in easily. Successful tests show the exit code 0. Executions with at least one failed test return the exit code 1.
+
 ### Show the number of passed tests
 
 ```bash

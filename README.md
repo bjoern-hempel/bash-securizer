@@ -123,13 +123,13 @@ Body size:                                        80923 Byte
 Full domain:                                      www.ressourcenmangel.de
 Domain:                                           ressourcenmangel.de
 IP address:                                       87.230.85.104
-nameserver:                                       ns1.hans.hosteurope.de
+Nameserver:                                       ns1.hans.hosteurope.de
                                                   ns2.hans.hosteurope.de
-provider:                                         Hosteurope GmbH
+Provider:                                         Hosteurope GmbH
 Successful tests:                                 16
 Failed tests:                                     0
 Total number of tests:                            16
-Operating system:                                 mac
+Executing operating system:                       mac
 ===============================================================
 
 

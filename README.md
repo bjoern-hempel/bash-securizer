@@ -1,6 +1,6 @@
 # Bash Webapplication Securizer
 
-
+A tool to check the security of web applications.
 
 ## Installation
 

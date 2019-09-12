@@ -48,7 +48,7 @@ Options
 
 ```
 
-### Simple run the tool
+### Simply run the tool
 
 ```bash
 user$ bash-securizer ressourcenmangel.de
@@ -71,6 +71,35 @@ user$ bash-securizer ressourcenmangel.de
 [html]         Metadata:                           Test passed.
 ---------------------------------------------------------------
 [summary]      State:                              Test passed.
+```
+
+### Show some more informations and hints
+
+```bash
+user$ bash-securizer ressourcenmangel.de --verbose
+
+[http status]  HTTP status code 200:               Test passed.
+[ssl]          HTTPS check:                        Test passed.
+[ssl]          SSL certificate check:              Test passed.
+                                                   → 56 days left
+[header]       X-Powered-By:                       Test passed.
+[header]       X-Generator:                        Test passed.
+[header]       Cookie Security:                    Test passed.
+[header]       HTTP Strict Transport Security:     Test passed.
+[header]       Content-Security-Policy:            Test passed. (But check the following warnings)
+                                                   → It is not recommend to use the setting "unsafe-inline".
+[header]       X-XSS-Protection Header:            Test passed.
+[header]       X-Content-Type-Options:             Test passed.
+[header]       X-Frame-Options:                    Test passed.
+[header]       Referrer-Policy:                    Test passed.
+[header]       Feature-Policy:                     Test passed.
+[header]       Server-Header:                      Test passed. (But check the following warnings)
+                                                   → If possible, disable the following content: "Apache"
+[html]         Secure-Links:                       Test passed.
+[html]         Metadata:                           Test passed.
+---------------------------------------------------------------
+[summary]      State:                              Test passed.
+                                                   → 16/16 tests passed.
 ```
 
 ## A. Authors

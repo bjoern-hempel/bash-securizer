@@ -48,6 +48,31 @@ Options
 
 ```
 
+### Simple run the tool
+
+```bash
+user$ bash-securizer ressourcenmangel.de
+
+[http status]  HTTP status code 200:               Test passed.
+[ssl]          HTTPS check:                        Test passed.
+[ssl]          SSL certificate check:              Test passed.
+[header]       X-Powered-By:                       Test passed.
+[header]       X-Generator:                        Test passed.
+[header]       Cookie Security:                    Test passed.
+[header]       HTTP Strict Transport Security:     Test passed.
+[header]       Content-Security-Policy:            Test passed.
+[header]       X-XSS-Protection Header:            Test passed.
+[header]       X-Content-Type-Options:             Test passed.
+[header]       X-Frame-Options:                    Test passed.
+[header]       Referrer-Policy:                    Test passed.
+[header]       Feature-Policy:                     Test passed.
+[header]       Server-Header:                      Test passed.
+[html]         Secure-Links:                       Test passed.
+[html]         Metadata:                           Test passed.
+---------------------------------------------------------------
+[summary]      State:                              Test passed.
+```
+
 ## A. Authors
 
 * **Björn Hempel** - *Initial work* - [Björn Hempel](https://github.com/bjoern-hempel)

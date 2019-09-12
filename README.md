@@ -11,3 +11,12 @@ user$ git clone git@github.com:bjoern-hempel/bash-securizer.git /opt/bash-securi
 user$ sudo ln -s /opt/bash-securizer/bin/check /usr/local/bin/bash-securizer
 user$ bash-securizer --help
 ```
+
+## Uninstalling
+
+```bash
+user$ sudo rm /usr/local/bin/bash-securizer
+user$ sudo rm -r /opt/bash-securizer
+```
+
+

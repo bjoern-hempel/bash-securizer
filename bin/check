@@ -421,7 +421,7 @@ function doHstsCheck {
     )
 
     if [ "$headerFilteredNotOptimal" != "" ]; then
-        printWarning $VERBOSE_MODE "header" "$checkName" "It is recommended to include the attributes includesubdomains and preload."
+        printWarning $VERBOSE_MODE "header" "$checkName" "It is recommended to include the attributes includesubdomains and preload."$'\n'$headerFilteredNotOptimal
         return 1
     fi
 

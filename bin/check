@@ -56,6 +56,16 @@ sslErrorDays=7
 # ssl warning days (must be greater than sslErrorDays)
 sslWarningDays=14
 
+# security hints
+read -r -d '' securityHints << EndOfString
+Read more at:
+https://github.com/friends-of-tutorials/web-application-security/blob/master/README.de.md
+Furthermore:
+https://www.owasp.org/index.php/Main_Page
+https://securityheaders.com
+https://www.bsi.bund.de/DE/Themen/StandardsKriterien/ISi-Reihe/ISi-Reihe_node.html
+EndOfString
+
 # needed software
 osName=$(getOS)
 neededSoftware=( awk bc cat curl cut grep head host openssl printf rev sed sort tail tr wc whois xargs xmllint )
@@ -880,7 +890,7 @@ function doSecurityTest {
         statusCode=1
         if $SHOW_TEST_FULL; then
             shortInfo=""
-            printError $VERBOSE_MODE "summary" "State" "$countTestFail/$countTestAll tests failed."
+            printError $VERBOSE_MODE "summary" "State" "$countTestFail/$countTestAll tests failed."$'\n'"$securityHints"
         fi
         if $SHOW_TEST_COUNT; then
             [ "$shortInfo" != "" ] && shortInfo+=" "

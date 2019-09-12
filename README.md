@@ -102,6 +102,36 @@ user$ bash-securizer ressourcenmangel.de --verbose
                                                    → 16/16 tests passed.
 ```
 
+## Some integration modes
+
+### Show the number of passed tests
+
+```bash
+user$ bash-securizer ressourcenmangel.de --show-test-count
+16/16
+```
+
+### Show the percentage of passed tests
+
+```bash
+user$ bash-securizer ressourcenmangel.de --show-test-percent
+93%
+```
+
+### Show the test label
+
+```bash
+user$ bash-securizer ressourcenmangel.de --show-test-label
+A-
+```
+
+### Combine the outputs
+
+```bash
+user$ bash-securizer ressourcenmangel.de --show-test-count --show-test-percent --show-test-label
+16/16 93% A-
+```
+
 ## A. Authors
 
 * **Björn Hempel** - *Initial work* - [Björn Hempel](https://github.com/bjoern-hempel)

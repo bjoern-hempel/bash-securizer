@@ -12,6 +12,12 @@ user$ sudo ln -s /opt/bash-securizer/bin/check /usr/local/bin/bash-securizer
 user$ bash-securizer --help
 ```
 
+## Update
+
+```bash
+user$ cd /opt/bash-securizer && git pull
+```
+
 ## Uninstalling
 
 ```bash

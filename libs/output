@@ -15,12 +15,13 @@ function printHeader {
 }
 
 function printSuccess {
-    local verbose=${1:-false}
-    local typeOutput="${2:-header}"
-    local title="$3"
-    local hints="${4:-}"
-    local warning=${5:-false}
-    local textPassed="${6:-Test passed.}"
+    local outputFormat=${1:-bash}
+    local verbose=${2:-false}
+    local typeOutput="${3:-header}"
+    local title="$4"
+    local hints="${5:-}"
+    local warning=${6:-false}
+    local textPassed="${7:-Test passed.}"
     local warningText=""
 
     $verbose && $warning && warningText=" \e[3m(But check the following warnings)\e[0m"
@@ -32,15 +33,16 @@ function printSuccess {
 }
 
 function printWarning {
-    printSuccess "$1" "$2" "$3" "$4" true
+    printSuccess "$1" "$2" "$3" "$4" "$5" true
 }
 
 function printError {
-    local verbose=${1:-false}
-    local typeOutput="${2:-header}"
-    local title="$3"
-    local hints="${4:-}"
-    local textPassed="${5:-Test failed.}"
+    local outputFormat=${1:-bash}
+    local verbose=${2:-false}
+    local typeOutput="${3:-header}"
+    local title="$4"
+    local hints="${5:-}"
+    local textPassed="${6:-Test failed.}"
 
     [ "$title" != "" ] && title="$title:"
 
